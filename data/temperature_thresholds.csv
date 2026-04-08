@@ -1,0 +1,18 @@
+t_max,t_inflect,t_low,t_high,reg.spp,region,species
+12.400000000000002,15.600000000000001,2.8,15.9,BOF-Carcinus maenas,BOF,Carcinus maenas
+15.823700000000002,8.9237,1.2237,20.323700000000002,HAL-Carcinus maenas,HAL,Carcinus maenas
+-0.656,17.844,-0.656,27.444000000000003,PEI-Carcinus maenas,PEI,Carcinus maenas
+15.2,13.5,2.8,15.9,BOF-Membranipora membranacea,BOF,Membranipora membranacea
+15.600000000000001,7.3,2.8,15.9,BOF-Botrylloides violaceus,BOF,Botrylloides violaceus
+4.5,8.8,2.8,15.9,BOF-Didemnum vexillum,BOF,Didemnum vexillum
+12.400000000000002,11.7,2.8,15.9,BOF-Ciona intestinalis,BOF,Ciona intestinalis
+18.123700000000003,14.823700000000002,1.2237,20.323700000000002,HAL-Membranipora membranacea,HAL,Membranipora membranacea
+20.2237,17.623700000000003,1.2237,20.323700000000002,HAL-Botrylloides violaceus,HAL,Botrylloides violaceus
+13.223700000000001,18.0237,1.2237,20.323700000000002,HAL-Ciona intestinalis,HAL,Ciona intestinalis
+15.044,14.644,-0.656,27.444000000000003,PEI-Membranipora membranacea,PEI,Membranipora membranacea
+15.744000000000002,15.644,-0.656,27.444000000000003,PEI-Botrylloides violaceus,PEI,Botrylloides violaceus
+16.744000000000003,16.444000000000003,-0.656,27.444000000000003,PEI-Ciona intestinalis,PEI,Ciona intestinalis
+14.1,13.8,-1.8,20.6,MAG-Membranipora membranacea,MAG,Membranipora membranacea
+18.1,6.500000000000001,-1.8,20.6,MAG-Botrylloides violaceus,MAG,Botrylloides violaceus
+17.8,6.500000000000001,-1.8,20.6,MAG-Ciona intestinalis,MAG,Ciona intestinalis
+-1.4,-1.5,-1.8,13.8,MAG-Carcinus maenas,MAG,Carcinus maenas

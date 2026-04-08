@@ -1,0 +1,239 @@
+Region,Date,Species,Plate 1,Plate 2,Plate 3,Plate 4,Plate 5,Plate 6,Plate 7,Plate 8,Plate 9,Plate 10,Avg,State,Life stage,Notes
+HAL,2023-06-22,Ciona intestinalis,1,1,1,1,1,1,1,1,1,1,1,R,J,Ciona actively recruiting (recruits 1-2 wks old)
+HAL,2023-06-29,Ciona intestinalis,2,0,1,1,1,1,2,1,1,0,1,R,J,Ciona still recruiting (recruits 2-3 wks old)
+HAL,2023-07-06,Botrylloides violaceus,1,0,1,0,1,1,0,1,0,0,0.5,B,J,Violet recruits starting to appear (Reproductive)
+HAL,2023-07-06,Ciona intestinalis,1,1,1,0,1,1,0,1,1,0,0.7,R,J,Ciona still recruiting (rectuits 2-3 wks old)
+HAL,2023-07-14,Botrylloides violaceus,1,1,1,1,0,1,1,0,0,0,0.6,G,J,All NIS from above becoming more abundant.
+HAL,2023-07-14,Ciona intestinalis,0,1,0,1,0,2,1,1,1,4,1.1,G,J,All NIS from above becoming more abundant.
+HAL,2023-07-20,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,D,,Mass dieoff - Gone!!! Likely due rainfall event.
+HAL,2023-07-20,Ciona intestinalis,1,0,0,0,0,0,0,0,0,3,0.4,D,"J, A, D",Mass dieoff of Ciona. Likely due rainfall event.
+HAL,2023-07-27,Ciona intestinalis,0,0,0,0,0,0,0,0,0,2,0.2,D,D,Mass dieoff & rotting of Ciona (con't)
+HAL,2023-08-03,Ciona intestinalis,0,0,0,0,0,0,0,0,0,1,0.1,D,"A,J",No live Ciona ?
+HAL,2023-08-10,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,No live Ciona ?
+HAL,2023-08-17,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,No live Ciona ?
+HAL,2023-08-24,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,No live Ciona ?
+HAL,2023-09-01,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,No live Ciona ?
+HAL,2023-09-08,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,R,,new recruits visible; very abundant
+HAL,2023-09-08,Ciona intestinalis,0,1,0,0,0,0,1,0,0,1,0.3,B,J,Ciona reappeared (new settlement ? reproducing)
+HAL,2023-09-08,Ciona intestinalis,1,1,2,2,0,1,1,1,2,1,1.2,R,J,new recruits visible; very abundant
+HAL,2023-09-15,Ciona intestinalis,0,1,0,0,1,0,1,0,0,1,0.4,B,"J, A","Ciona reappeared, healthy (new settlement omgoing ? reproducing)"
+HAL,2023-09-21,Ciona intestinalis,0,1,0,0,1,0,1,0,0,1,0.4,G,"J, A",New recruits hanging on & growing; still mostly juveniles (not reproductive & a few adults (mature but not obviously reproducing)
+HAL,2023-09-22,Botrylloides violaceus,0,0,0,1,0,0,0,0,0,1,0.2,,"J,A",
+HAL,2023-09-22,Ciona intestinalis,3,3,3,3,4,3,4,4,4,4,3.5,G,"J, A",
+HAL,2023-10-12,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-10-12,Ciona intestinalis,4,4,4,4,3,4,4,4,4,4,3.9,"G, R","J, A",Ciona becoming mature & reprodictive; growing rapidly & starting to overgrow other NIS
+HAL,2023-10-18,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,"A,J",
+HAL,2023-10-18,Ciona intestinalis,0,3,4,4,4,4,4,3,4,4,3.4,S,"J, A",Some Ciona looking like they are starting to senesce ? likely post-reprodcutive dieback.
+HAL,2023-10-26,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,
+HAL,2023-10-26,Ciona intestinalis,4,4,4,4,3,4,0,4,0,4,3.1,S,"J, A","Some Ciona spent, clearly senescing (post-reprodcutive dieback)."
+HAL,2023-11-02,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,J,
+HAL,2023-11-02,Ciona intestinalis,4,4,4,4,3,4,4,4,4,4,3.9,"B,D","J, A",Ciona dominant; senescing (post-reprod dieback); several plates full of senscing adults.
+HAL,2023-11-09,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-11-09,Ciona intestinalis,3,4,4,4,4,4,0,4,4,4,3.5,S,"J, A",Ciona dominant; con't senescing (post-reprod dieback)
+HAL,2023-11-16,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,J,
+HAL,2023-11-16,Ciona intestinalis,3,4,4,4,3,4,3,4,4,4,3.7,"S, D","J, A",Ciona dominant; con't senescing (post-reprod dieback)
+HAL,2023-11-23,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-11-23,Ciona intestinalis,3,3,4,4,3,4,3,4,4,4,3.6,S,"J, A",Ciona dominant; con't senescing (post-reprod dieback)
+HAL,2023-12-01,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,"J,A",
+HAL,2023-12-01,Ciona intestinalis,2,3,4,4,2,4,3,3,4,4,3.3,S,"J, A",senesce (reproduction) effectively over
+HAL,2023-12-07,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2023-12-07,Ciona intestinalis,2,4,4,3,3,4,2,2,4,4,3.2,S,"J, A",mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2023-12-14,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-12-14,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-12-21,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2023-12-21,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2024-01-04,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,
+HAL,2024-01-04,Ciona intestinalis,1,1,4,4,1,4,1,1,3,4,2.4,D,"A,J",
+HAL,2024-01-18,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-01-18,Ciona intestinalis,4,1,4,3,1,4,1,1,2,4,2.5,,"A,J",mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-02-01,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-02-01,Ciona intestinalis,2,1,4,2,2,4,1,1,3,4,2.4,D,"A,J",mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-02-08,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-02-08,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,mostly static in term of reprod (none) & development (none) ... some die off
+HAL,2024-02-16,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,A,
+HAL,2024-02-16,Ciona intestinalis,1,1,4,2,1,4,1,1,1,3,1.9,D,"A,J",
+HAL,2024-03-01,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2024-03-01,Ciona intestinalis,1,1,4,1,1,4,1,1,1,2,1.7,D,"A,J",
+HAL,2024-03-21,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+HAL,2024-03-21,Ciona intestinalis,1,1,4,1,1,4,1,1,1,2,1.7,,"A,J",
+BOF,2023-06-28,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,
+BOF,2023-06-28,Botrylloides violaceus,1,0,0,0,0,0,0,0,0,0,0.1,,J,
+BOF,2023-07-05,Ciona intestinalis,1,1,1,1,0,1,1,1,1,1,0.9,,J,
+BOF,2023-07-05,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,,
+BOF,2023-07-12,Ciona intestinalis,1,1,1,1,1,1,1,1,1,1,1,,J,
+BOF,2023-07-12,Botrylloides violaceus,0,0,0,0,0,0,0,0,1,0,0.1,,J,
+BOF,2023-07-19,Ciona intestinalis,1,2,1,2,1,1,0,1,,1,1.111111111,,J,
+BOF,2023-07-19,Botrylloides violaceus,0,0,0,0,0,0,0,0,,0,0,,,
+BOF,2023-07-26,Ciona intestinalis,1,1,1,2,1,2,2,1,,1,1.333333333,,"J,A",
+BOF,2023-07-26,Botrylloides violaceus,0,0,0,0,0,0,0,0,,0,0,,,
+BOF,2023-08-02,Ciona intestinalis,1,3,1,4,1,1,3,1,,1,1.777777778,,"J,A",
+BOF,2023-08-02,Botrylloides violaceus,0,0,0,0,0,0,0,0,,0,0,,"J,A",
+BOF,2023-08-09,Ciona intestinalis,1,4,1,4,1,2,3,2,,1,2.111111111,,"J,A",
+BOF,2023-08-09,Botrylloides violaceus,0,0,0,0,0,0,0,0,,0,0,,,
+BOF,2023-08-15,Ciona intestinalis,4,4,1,0,1,2,2,1,,1,1.777777778,,"J,A",
+BOF,2023-08-15,Botrylloides violaceus,0,0,0,0,0,0,0,1,,0,0.111111111,,"J,A",
+BOF,2023-08-23,Ciona intestinalis,2,4,0,4,1,2,3,1,,1,2,,"J,A",
+BOF,2023-08-23,Botrylloides violaceus,0,0,0,0,0,0,0,1,,1,0.222222222,,"J,A",
+BOF,2023-08-30,Ciona intestinalis,1,4,0,4,2,0,3,4,,2,2.222222222,,"A,J",
+BOF,2023-08-30,Botrylloides violaceus,0,0,1,0,0,0,0,1,,1,0.333333333,,"J,A",
+BOF,2023-09-05,Ciona intestinalis,2,2,2,4,0,4,3,2,,2,2.333333333,S,"J,A",C. intetinalis - post reproductive die back
+BOF,2023-09-05,Botrylloides violaceus,0,0,0,0,0,0,0,2,,0,0.222222222,,"J,A",
+BOF,2023-09-12,Ciona intestinalis,2,4,1,4,3,4,3,0,,3,2.666666667,,"J,A",
+BOF,2023-09-12,Botrylloides violaceus,0,0,0,0,0,0,0,2,,0,0.222222222,,"J,A",
+BOF,2023-09-23,Ciona intestinalis,3,4,1,4,3,4,4,2,,4,3.222222222,S,"J,A",C. intetinalis - post reproductive die back
+BOF,2023-09-23,Botrylloides violaceus,0,0,1,0,0,0,0,2,,0,0.333333333,S,"J,A",B. violaceus - post reproductive die back
+BOF,2023-09-26,Ciona intestinalis,4,4,1,2,4,2,3,2,,3,2.777777778,,"J,A",
+BOF,2023-09-26,Botrylloides violaceus,0,0,0,0,0,2,1,0,,0,0.333333333,,J,
+BOF,2023-10-04,Ciona intestinalis,3,4,1,4,4,4,4,1,,3,3.111111111,S,"A,J",C. intetinalis - post reproductive die back
+BOF,2023-10-04,Botrylloides violaceus,0,0,0,0,0,1,0,1,,0,0.222222222,,,
+BOF,2023-10-11,Ciona intestinalis,2,4,1,4,3,4,4,1,,3,2.888888889,S,"A,J",C. intetinalis - post reproductive die back
+BOF,2023-10-11,Botrylloides violaceus,0,0,0,0,0,0,0,1,,0,0.111111111,,"A,J",
+BOF,2023-10-18,Ciona intestinalis,3,4,2,4,3,4,4,2,,3,3.222222222,R,"A,J",C. intetinalis - 2nd recruitment following post reproductive die back
+BOF,2023-10-18,Botrylloides violaceus,0,0,0,0,0,0,0,1,,0,0.111111111,,"A,J",
+BOF,2023-10-25,Ciona intestinalis,2,4,1,4,4,4,4,2,,3,3.111111111,R,"A,J",C. intetinalis - 2nd recruitment following post reproductive die back
+BOF,2023-10-25,Botrylloides violaceus,0,0,0,0,0,0,0,2,,0,0.222222222,,"A,J",
+BOF,2023-11-01,Ciona intestinalis,2,4,1,0,4,4,4,1,,4,2.666666667,R,"A,J",C. intetinalis - 2nd recruitment following post reproductive die back
+BOF,2023-11-01,Botrylloides violaceus,0,0,1,0,0,0,0,2,,0,0.333333333,,"A,J",
+BOF,2023-11-08,Ciona intestinalis,2,4,1,4,4,4,4,2,,3,3.111111111,S,"A,J",C. intetinalis -post reproductive die back
+BOF,2023-11-08,Botrylloides violaceus,0,0,0,0,0,0,0,2,,0,0.222222222,B,A,B. violaceus -  reproductive  
+BOF,2023-11-29,Ciona intestinalis,1,,0,4,4,4,4,2,,3,2.75,,"A,J",
+BOF,2023-11-29,Botrylloides violaceus,0,,0,0,0,0,0,3,,0,0.375,,"A,J",
+BOF,2023-12-06,Ciona intestinalis,1,,0,4,3,4,4,2,,4,2.75,,"A,J",saved pic of plate 8
+BOF,2023-12-06,Botrylloides violaceus,1,,0,0,0,0,0,3,,0,0.5,B,"A,J",B. violaceus -  reproductive  
+BOF,2023-12-14,Ciona intestinalis,1,,0,4,4,4,4,2,,4,2.875,,"A,J",
+BOF,2023-12-14,Botrylloides violaceus,0,,1,0,0,0,0,2,,0,0.375,S,"J,A",B. violaceus -  regressing
+BOF,2023-12-27,Ciona intestinalis,2,,0,0,0,4,4,2,,,1.714285714,,"A,J",
+BOF,2023-12-27,Botrylloides violaceus,0,,0,0,0,0,0,3,,,0.428571429,,,
+BOF,2024-01-03,Ciona intestinalis,2,,0,3,4,4,4,2,,,2.714285714,D,"A,J",dieback in plate 1
+BOF,2024-01-03,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,,,overwinter sytate ... Static
+BOF,2024-01-09,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,,"A,J",
+BOF,2024-01-09,Botrylloides violaceus,0,,1,0,0,0,0,2,,,0.428571429,,,
+BOF,2024-01-24,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,,"A,J",
+BOF,2024-01-24,Botrylloides violaceus,0,,1,0,0,0,0,2,,,0.428571429,,,
+BOF,2024-01-31,Ciona intestinalis,1,,1,4,4,4,4,1,,,2.714285714,,"A,J",
+BOF,2024-01-31,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,,,
+BOF,2024-02-07,Ciona intestinalis,1,,1,4,4,4,4,1,,,2.714285714,D,"A,J",C. intetinalis - die back
+BOF,2024-02-07,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,,,
+BOF,2024-02-14,Ciona intestinalis,1,,1,4,4,4,4,1,,,2.714285714,D,"A,J",C. intetinalis - die back
+BOF,2024-02-14,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,,,
+BOF,2024-02-22,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,D,"A,J",C. intetinalis - die back
+BOF,2024-02-22,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,,,
+BOF,2024-03-06,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,D,"A,J",C. intetinalis - die back
+BOF,2024-03-06,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,S,,B. violaceus -  regressing
+BOF,2024-03-13,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,D,"A,J",C. intetinalis - die back
+BOF,2024-03-13,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,S,,B. violaceus -  regressing
+BOF,2024-03-28,Ciona intestinalis,1,,0,4,4,4,4,1,,,2.571428571,D,"A,J",C. intetinalis - die back
+BOF,2024-03-28,Botrylloides violaceus,0,,0,0,0,0,0,2,,,0.285714286,S,,B. violaceus -  regressing
+BOF,2024-04-11,Ciona intestinalis,2,,1,3,3,4,4,2,,,2.714285714,,"A,J",
+BOF,2024-04-11,Botrylloides violaceus,0,,0,0,0,0,0,1,,,0.142857143,,"A,J",
+BOF,2024-04-17,Ciona intestinalis,2,,1,4,2,3,4,1,,,2.428571429,,"A,J",
+BOF,2024-04-17,Botrylloides violaceus,0,,0,0,0,0,0,1,,,0.142857143,,,
+BOF,2024-04-25,Ciona intestinalis,2,,1,3,2,3,3,2,,,2.285714286,,,
+BOF,2024-04-25,Botrylloides violaceus,0,,0,1,1,0,0,1,,,0.428571429,S,,B. violaceus -post reproductive die back
+BOF,2024-05-01,Ciona intestinalis,2,,0,3,3,3,3,2,,,2.285714286,B,"A,J",C. intetinalis reproductive
+BOF,2024-05-01,Botrylloides violaceus,0,,0,0,0,0,0,1,,,0.142857143,S,,B. violaceus -post reproductive die back
+BOF,2024-05-08,Ciona intestinalis,1,,0,2,3,3,3,1,,,1.857142857,S,"A,J",C. intetinalis -post reproductive die back
+BOF,2024-05-08,Botrylloides violaceus,0,,0,0,0,0,0,1,,,0.142857143,S,,B. violaceus -post reproductive die back
+BOF,2024-05-13,Ciona intestinalis,1,,0,2,2,3,4,1,,,1.857142857,,"A,J",
+BOF,2024-05-13,Botrylloides violaceus,0,,0,0,0,0,0,0,,,0,,,B. violaceus -post reproductive die back (gone!)
+BOF,2024-05-22,Ciona intestinalis,1,,0,2,2,3,3,1,,,1.714285714,R,"A,J",C. intetinalis -  recruitment following post reproductive die back
+BOF,2024-05-22,Botrylloides violaceus,0,,0,0,0,0,0,1,,,0.142857143,D,R,B. violaceus  gone (post reproduction)
+MAG,2023-06-14,Ciona intestinalis,0,0,0,0,0,0,0,0,0,0,0,,,"In general, settlement was low or photo resolution was too low to ID anything to spp.
+Could not track ind. Plates from May 17 - June 9"
+MAG,2023-06-14,Botrylloides violaceus,0,0,0,0,0,0,0,0,0,0,0,,, -
+MAG,2023-06-21,Ciona intestinalis,1,,,,,,,,,,1,R,,"recent settlement (2-3 weeks old);
+Note: J = Juv & A = adult; superscipt 'a' means 'alive', alternative is 'd' = dead where notable:
+% Cover: 0=absent, 1=<25% cover, 2=25-50%, 3=50-75%, 4=>75%."
+MAG,2023-06-21,Botrylloides violaceus,0,,,,,,,,,,0,,,heavy recent settlement on one plate
+MAG,2023-06-27,Ciona intestinalis,0,,,,,,,,,,0,,, -
+MAG,2023-06-27,Botrylloides violaceus,0,,,,,,,,,,0,,, -
+MAG,2023-07-06,Ciona intestinalis,1,,,,,,,,,,1,R,J,"recent settlement, recruitment"
+MAG,2023-07-06,Botrylloides violaceus,0,,,,,,,,,,0,,, -
+MAG,2023-07-13,Ciona intestinalis,1,,,,,,,,,,1,R,J, newly sett.; weeks old.
+MAG,2023-07-13,Botrylloides violaceus,0,,,,,,,,,,0,,, -
+MAG,2023-07-21,Ciona intestinalis,2,3,,,,,,,,,2.5,R,J,"high growth; wqeeks old and newer recruits (1-2 wks);
+Note: % Cover given as range to describe variability btw plates oberved; other assessments were done at the plate level but these plates were labeled /tractable (as far as w e could tell)."
+MAG,2023-07-21,Botrylloides violaceus,0,,,,,,,,,,0,,, -
+MAG,2023-07-24,Ciona intestinalis,2,3,,,,,,,,,2.5,"R,G",J,high growth; newer recruits (1-2 wks) to weeks old (>2-3 weeks)
+MAG,2023-07-24,Botrylloides violaceus,0,,,,,,,,,,0,R,,onset (new) settlement; weeks old.
+MAG,2023-07-31,Ciona intestinalis,2,3,,,,,,,,,2.5,S,"J,A","Ciona intestinalis - post reproductive die back (i.e., senecence)?"
+MAG,2023-07-31,Botrylloides violaceus,1,,,,,,,,,,1,R,"J,A",onset (new) settlement; weeks old.
+MAG,2023-08-08,Ciona intestinalis,2,3,4,,,,,,,,3,,"J,A",
+MAG,2023-08-08,Botrylloides violaceus,1,,,,,,,,,,1,R,J, newly sett.; 2-3 weeks old
+MAG,2023-08-16,Ciona intestinalis,2,3,4,,,,,,,,3,,"A,J",
+MAG,2023-08-16,Botrylloides violaceus,1,2,3,,,,,,,,2,,"A,J",
+MAG,2023-08-24,Ciona intestinalis,2,3,4,,,,,,,,3,,"J,A",
+MAG,2023-08-24,Botrylloides violaceus,1,2,,,,,,,,,1.5,R,J,
+MAG,2023-08-29,Ciona intestinalis,2,3,4,,,,,,,,3,S,"J,A",some senescence / regression (up to 10%)
+MAG,2023-08-29,Botrylloides violaceus,1,2,3,,,,,,,,2,"S,R",J,some senescence; recruitmenbt
+MAG,2023-09-07,Ciona intestinalis,2,3,4,,,,,,,,3,,"A,J",
+MAG,2023-09-07,Botrylloides violaceus,1,2,,,,,,,,,1.5,,,
+MAG,2023-09-13,Ciona intestinalis,2,3,4,,,,,,,,3,S,,some starting to senesce
+MAG,2023-09-13,Botrylloides violaceus,1,2,,,,,,,,,1.5,,,
+MAG,2023-09-18,Ciona intestinalis,2,3,4,,,,,,,,3,S,A,some starting to senesce
+MAG,2023-09-18,Botrylloides violaceus,1,2,,,,,,,,,1.5,,A,
+MAG,2023-09-27,Ciona intestinalis,2,3,4,,,,,,,,3,S,A,post reproductive senecence (die-back)
+MAG,2023-09-27,Botrylloides violaceus,1,2,,,,,,,,,1.5,G,A,taking over space from Ciona as C senesces
+MAG,2023-10-04,Ciona intestinalis,2,3,4,,,,,,,,3,S,A,"post reproductive senecence; signs of reproducing;
+Note: Ciona dying back as violet overgrowing it (and seemingly everything else on the plate)"
+MAG,2023-10-04,Botrylloides violaceus,2,3,,,,,,,,,2.5,S,A,some early signs of senecence
+MAG,2023-10-11,Ciona intestinalis,2,3,4,,,,,,,,3,"G,S","A,J",post reproductive senecence; signs of reproducing
+MAG,2023-10-11,Botrylloides violaceus,1,2,,,,,,,,,1.5,G,A,v. healthy!
+PEI,2023-05-19,Ciona intestinalis,0,0,0,,,,,,,,0,,,Photos were low resolution so '?' have been added to indicate associated uncertainty
+PEI,2023-05-19,Botrylloides violaceus,0,0,0,,,,,,,,0,,,
+PEI,2023-05-26,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-05-26,Botrylloides violaceus,0,0,0,,,,,,,,0,,,
+PEI,2023-06-01,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-06-01,Botrylloides violaceus,1,1,1,,,,,,,,1,R,, - few potential recruits
+PEI,2023-06-08,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-06-08,Botrylloides violaceus,1,1,1,,,,,,,,1,R,, - few potential recruits
+PEI,2023-06-13,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-06-13,Botrylloides violaceus,1,1,1,,,,,,,,1,R,, - few potential recruits
+PEI,2023-06-21,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-06-21,Botrylloides violaceus,1,2,3,,,,,,,,2,R,, - few potential recruits
+PEI,2023-06-29,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-06-29,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-07-07,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-07-07,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-07-13,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-07-13,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-07-20,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-07-20,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-08-03,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-08-03,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-08-17,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-08-17,Botrylloides violaceus,1,1,1,,,,,,,,1,R,,Settlement
+PEI,2023-08-25,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-08-25,Botrylloides violaceus,1,1,1,,,,,,,,1,,,
+PEI,2023-08-30,Ciona intestinalis,Out,0,0,,,,,,,,0,,,
+PEI,2023-08-30,Botrylloides violaceus,of,2,2,,,,,,,,2,,A,
+PEI,2023-09-07,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-09-07,Botrylloides violaceus,2,2,2,,,,,,,,2,,"A,J",
+PEI,2023-09-14,Ciona intestinalis,0,0,0,,,,,,,,0,,,
+PEI,2023-09-14,Botrylloides violaceus,3,2,2,,,,,,,,2.333333333,,"A,J",
+PEI,2023-09-21,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-09-21,Botrylloides violaceus,lost,3,1,,,,,,,,2,,,
+PEI,2023-09-28,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-09-28,Botrylloides violaceus,lost,2,1,,,,,,,,1.5,,,
+PEI,2023-10-06,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-10-06,Botrylloides violaceus,lost,2,2,,,,,,,,2,D,A,
+PEI,2023-10-23,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-10-23,Botrylloides violaceus,lost,2,2,,,,,,,,2,D,A, - Violet dying off (*post-reprod'v senecences)
+PEI,2023-10-27,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-10-27,Botrylloides violaceus,lost,2,1,,,,,,,,1.5,D,A, - Violet dying off (*post-reprod'v senecences)
+PEI,2023-11-02,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-11-02,Botrylloides violaceus,lost,1,1,,,,,,,,1,,A,
+PEI,2023-11-10,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-11-10,Botrylloides violaceus,lost,1,1,,,,,,,,1,D,A, - most Violet died off (*post-reprod'v senecences)
+PEI,2023-11-16,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-11-16,Botrylloides violaceus,lost,1,1,,,,,,,,1,R,J,
+PEI,2023-11-23,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-11-23,Botrylloides violaceus,lost,1,1,,,,,,,,1,"R,G",J, - some violet recruits; late secondary reproduction
+PEI,2023-11-30,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-11-30,Botrylloides violaceus,lost,1,1,,,,,,,,1,"R,G",J, - some violet recruits; late secondary reproduction
+PEI,2023-12-07,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2023-12-07,Botrylloides violaceus,lost,1,1,,,,,,,,1,"R,G",J, - some violet recruits; late secondary reproduction
+PEI,2024-01-31,Ciona intestinalis,Plate,0,0,,,,,,,,0,,,
+PEI,2024-01-31,Botrylloides violaceus,lost,1,1,,,,,,,,1,,J,
+PEI,2024-03-05,Ciona intestinalis,Plate,0,Plate,,,,,,,,0,,,
+PEI,2024-03-05,Botrylloides violaceus,lost,1,lost,,,,,,,,1,,,

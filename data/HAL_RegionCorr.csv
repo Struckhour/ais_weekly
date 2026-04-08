@@ -1,0 +1,16 @@
+Parameter1,Parameter2,r,p
+concentration,temp,0.032238920631863136,0.976927195735263
+concentration,sal,0.06609116417871438,0.46563496543819727
+concentration,turb,NA,NA
+concentration,pH,0.024241968679622687,0.976927195735263
+concentration,chl,NA,NA
+temp,sal,0.23791689681701594,1.291160059896523e-6
+temp,turb,NA,NA
+temp,pH,0.22385502347073852,4.443011717219728e-6
+temp,chl,NA,NA
+sal,turb,NA,NA
+sal,pH,0.23136328431116082,2.3422752403221054e-6
+sal,chl,NA,NA
+turb,pH,NA,NA
+turb,chl,NA,NA
+pH,chl,NA,NA
