@@ -111,16 +111,16 @@ dfRaw <- samples %>%
     concentration = as.numeric(concentration),
     species       = scientificName,
     primer        = "COI",
-    detected      = concentration,  # treat any non‑zero as “detected”
     domain        = "Eukaryota"
   ) %>%
   # Safeguards -----------------------------------------------------------------
-drop_na(date, decimalLatitude) %>%        # remove samples lacking essential info
+  drop_na(date, decimalLatitude) %>%        # remove samples lacking essential info
   filter(!is.na(kingdom)) %>%             # discard taxonomy blanks
   # Remove metadata columns we do not need downstream
   select(-idx, -basisOfRecord, -recordedBy,
          -occurrenceStatus, -quantificationCycle, -concentrationUnit) %>%
-  mutate(concentration = coalesce(concentration, 0))
+  mutate(concentration = coalesce(concentration, 0),
+         detected      = if_else(concentration > 0, 1, 0)) # treat any non‑zero as “detected”
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 5. Re‑order months so each region’s “Month 1” = first sampling month ----------
@@ -150,11 +150,12 @@ month_labels_split <- split(month_labels_df, ~region)
 # ───────────────────────────────────────────────────────────────────────────────
 # 8. Remove known Halifax outliers (19‑Oct-2023 samples) -----------------------
 # ───────────────────────────────────────────────────────────────────────────────
-outlierHal <- dfRaw %>%
-  filter(region == "HAL", date == "2023-10-19" | species == "Didemnum vexillum")
+# outlierHal <- dfRaw %>%
+#   filter(region == "HAL", date == "2023-10-19" | species == "Didemnum vexillum")
 
-dfRawClean <- dfRaw %>%
-  anti_join(outlierHal, by = c("region", "date", "species"))
+dfRawClean <- dfRaw
+# dfRawClean <- dfRaw %>%
+  # anti_join(outlierHal, by = c("region", "date", "species"))
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 7. Colour palette matched to static map (for consistent figures) -------------
@@ -207,14 +208,34 @@ dfWeeks <- dfRawClean %>%
 # 12. Month‑scale summary ------------------------------------------------------
 # ───────────────────────────────────────────────────────────────────────────────
 dfMonths <- dfRawClean %>%
-  group_by(region, species, month_reordered, year) %>%
+  group_by(region, species, month_reordered) %>%
   summarise(
-    nReps   = n(),
-    nDet    = sum(detected, na.rm = TRUE),
-    meanConc= mean(concentration, na.rm = TRUE),
-    sdConc  = sd(concentration,   na.rm = TRUE),
-    .groups = "drop"
+    nReps    = n(),
+    nDet     = sum(detected, na.rm = TRUE),
+    det_rate = if_else(nReps > 0, nDet / nReps, NA_real_),
+    meanConc = mean(concentration, na.rm = TRUE),
+    meanLogConc = mean(logConc, na.rm = TRUE),
+    meanPosLogConc = mean(logConc[logConc > 0], na.rm = TRUE),
+    sdConc   = sd(concentration,   na.rm = TRUE),
+    .groups  = "drop"
   ) %>%
+  # Normalize within region × species × year(?)
+  group_by(region, species) %>%
+  mutate(
+    normMeanLogConc = if (all(is.na(meanPosLogConc))) {
+      NA_real_
+    } else {
+      meanLogConc / max(meanPosLogConc, na.rm = TRUE)
+    },
+    normPosMeanLogConc = if (all(is.na(meanPosLogConc))) {
+      NA_real_
+    } else {
+      meanPosLogConc / max(meanPosLogConc, na.rm = TRUE)
+    },
+    normMeanLogConc = replace_na(normMeanLogConc, 0),
+    normPosMeanLogConc = replace_na(normPosMeanLogConc, 0)
+  ) %>%
+  ungroup() %>%
   # Join rotated month order for plotting
   left_join(month_labels_df, by = c("region", "month_reordered" = "month_reordered")) %>%
   group_by(region, species) %>%
