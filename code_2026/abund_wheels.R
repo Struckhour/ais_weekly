@@ -291,10 +291,16 @@ calc_window_simple <- function(plot_df, threshold = 0.75) {
 }
 
 
+
+
+
+selected_species <- "Membranipora membranacea"
+selected_region <- "PEI"
+
 df_sub <- df %>%
   dplyr::filter(
-    species == "Membranipora membranacea",
-    region == "PEI"
+    species == selected_species,
+    region == selected_region
   )
 
 plot_df <- df_sub %>%
@@ -302,7 +308,96 @@ plot_df <- df_sub %>%
   interp_monthly_circular() %>%
   classify_months(threshold = 0.75)
 
+window_res <- calc_window_simple(plot_df, threshold = 0.75)
 
 
 
-calc_window_simple(plot_df, threshold = 0.75)
+
+
+
+
+
+
+
+
+
+##############################
+#WILCOXON TEST BETWEEN OPTIMAL WINDOW OF MONTHS AND SUBOPTIMAL MONTHS
+##############################
+
+test_window_wilcox <- function(df_raw, species, region, window_res) {
+
+  if (is.null(window_res)) {
+    warning("No window defined")
+    return(NULL)
+  }
+
+  start <- window_res$start_month
+  end   <- window_res$end_month
+  wrap  <- window_res$wrap_around
+
+  df_sub <- df_raw %>%
+    dplyr::filter(
+      species == !!species,
+      region == !!region
+    )
+
+  if (nrow(df_sub) == 0) {
+    warning("No data for this species/region")
+    return(NULL)
+  }
+
+  # define window membership
+  if (!wrap) {
+    in_window <- df_sub$month >= start & df_sub$month <= end
+  } else {
+    in_window <- df_sub$month >= start | df_sub$month <= end
+  }
+
+  df_sub <- df_sub %>%
+    dplyr::mutate(window = ifelse(in_window, "in", "out"))
+
+  if (length(unique(df_sub$window)) < 2) {
+    warning("Only one group present (all in or all out)")
+    return(NULL)
+  }
+
+  # Wilcoxon test
+  w <- wilcox.test(logConc ~ window, data = df_sub, exact = FALSE)
+
+  # group summaries
+  summary <- df_sub %>%
+    dplyr::group_by(window) %>%
+    dplyr::summarise(
+      n = dplyr::n(),
+      median = median(logConc, na.rm = TRUE),
+      mean = mean(logConc, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # ---------------------------
+  # EFFECT SIZE (rank-biserial)
+  # ---------------------------
+  n_in  <- sum(df_sub$window == "in")
+  n_out <- sum(df_sub$window == "out")
+
+  w_stat <- as.numeric(w$statistic)
+
+  rank_biserial <- (2 * w_stat) / (n_in * n_out) - 1
+
+  prob_superiority <- (rank_biserial + 1) / 2
+
+  list(
+    summary = summary,
+    test = data.frame(
+      statistic = w_stat,
+      p_value = w$p.value,
+      rank_biserial = rank_biserial,
+      prob_superiority = prob_superiority
+    )
+  )
+}
+
+
+wilcox_result <- test_window_wilcox(dfRawClean, selected_species, selected_region, window_res)
+wilcox_result
