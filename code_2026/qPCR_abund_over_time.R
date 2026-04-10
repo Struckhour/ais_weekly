@@ -148,10 +148,9 @@ ggplot(df_plot, aes(x = month_reordered, y = value, group = metric, color = metr
 #ALL THREE
 ########################
 
-
-# Prepare the data
 df_plot <- dfMonths %>%
-  select(region, species, month_reordered, normMeanLogConc, normPosMeanLogConc, det_rate) %>%
+  select(region, species, month_original,
+         normMeanLogConc, normPosMeanLogConc, det_rate) %>%
   pivot_longer(
     cols = c(normMeanLogConc, normPosMeanLogConc, det_rate),
     names_to = "metric",
@@ -159,25 +158,40 @@ df_plot <- dfMonths %>%
   ) %>%
   mutate(
     metric = recode(metric,
-                    normMeanLogConc    = "Normalized log concentration",
-                    normPosMeanLogConc = "Normalized Positive log concentration",
-                    det_rate           = "Detection rate"),
-    month_label = substr(month.abb[month_reordered], 1, 1),
+                    normMeanLogConc     = "Normalized log concentration",
+                    normPosMeanLogConc  = "Normalized Positive log concentration",
+                    det_rate            = "Detection rate"
+    ),
+
+    # ✅ THIS IS THE KEY FIX
+    month_plot_label = factor(
+      month_original,
+      levels = 1:12,
+      labels = month.abb
+    ),
+
     region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM"))
   )
-
 # Plot
-ggplot(df_plot, aes(x = month_reordered, y = value, group = metric, color = metric)) +
-  geom_line(aes(alpha = if_else(metric == "Normalized Positive log concentration", 0.5, 1)),
-            linewidth = 1) +
-  geom_point(size = 2) +
+ggplot(df_plot, aes(x = month_plot_label, y = value, color = metric)) +
+
+  geom_line(
+    data = df_plot %>% filter(metric != "Normalized Positive log concentration"),
+    aes(group = interaction(metric, region, species)),
+    linewidth = 1,
+    alpha = 1
+  ) +
+
+  geom_line(
+    data = df_plot %>% filter(metric == "Normalized Positive log concentration"),
+    aes(group = interaction(metric, region, species)),
+    linewidth = 1,
+    alpha = 0.5
+  ) +
+
+  geom_point(aes(group = interaction(metric, region, species)), size = 2) +
 
   facet_grid(region ~ species) +
-
-  scale_x_continuous(
-    breaks = 1:12,
-    labels = substr(month.abb, 1, 1)
-  ) +
 
   scale_color_manual(
     values = c(
@@ -187,9 +201,22 @@ ggplot(df_plot, aes(x = month_reordered, y = value, group = metric, color = metr
     )
   ) +
 
-  scale_alpha_identity() +  # uses the alpha values directly without a legend
-
   scale_y_continuous(limits = c(0, 1)) +
+
+  scale_x_discrete(labels = c(
+    "Jan" = "J",
+    "Feb" = "F",
+    "Mar" = "M",
+    "Apr" = "A",
+    "May" = "M",
+    "Jun" = "J",
+    "Jul" = "J",
+    "Aug" = "A",
+    "Sep" = "S",
+    "Oct" = "O",
+    "Nov" = "N",
+    "Dec" = "D"
+  )) +
 
   theme_classic() +
   labs(

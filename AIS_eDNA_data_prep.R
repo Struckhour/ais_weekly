@@ -130,7 +130,8 @@ start_months <- c(MAG = 5, BOF = 5, PEI = 4, HAL = 4, GOM = 6)  # May, May, …
 dfRaw <- dfRaw %>%
   mutate(
     start_month     = start_months[region],
-    month_reordered = (month - start_month + 12) %% 12 + 1
+    month_reordered = (month - start_month + 12) %% 12 + 1,
+    calendar_month = month
   )
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -216,6 +217,7 @@ dfMonths <- dfRawClean %>%
     meanConc = mean(concentration, na.rm = TRUE),
     meanLogConc = mean(logConc, na.rm = TRUE),
     meanPosLogConc = mean(logConc[logConc > 0], na.rm = TRUE),
+    month_original = first(month),
     sdConc   = sd(concentration,   na.rm = TRUE),
     .groups  = "drop"
   ) %>%
