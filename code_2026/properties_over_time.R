@@ -1,3 +1,5 @@
+source('./AIS_eDNA_data_prep.R')
+
 View(metadata)
 
 
@@ -76,4 +78,6 @@ ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region)) +
     y = "Temperature (°C)",
     color = "Region"
   )
+
+
 

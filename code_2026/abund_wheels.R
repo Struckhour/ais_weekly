@@ -1,3 +1,6 @@
+source('./AIS_eDNA_data_prep.R')
+
+
 df <- dfMonths %>% select(region, species, month_original, normMeanLogConc)
 
 

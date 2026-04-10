@@ -1,3 +1,5 @@
+source('./AIS_eDNA_data_prep.R')
+
 
 ########################################################
 #FUNCTION DEFINITIONS
