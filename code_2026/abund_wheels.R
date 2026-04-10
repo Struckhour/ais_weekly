@@ -79,6 +79,26 @@ plot_monthly_wheel <- function(df, title = NULL) {
   ggplot2::ggplot(df) +
 
     # -------------------------
+  # RADIAL LINES (months)
+  # -------------------------
+  ggplot2::geom_vline(
+    xintercept = 1:12,
+    color = "black",
+    linewidth = 0.3,
+    alpha = 0.5
+  ) +
+
+    # -------------------------
+  # CIRCULAR GRID LINES
+  # -------------------------
+  ggplot2::geom_hline(
+    yintercept = c(0.25, 0.5, 0.75, 1),
+    color = "black",
+    linewidth = 0.3,
+    alpha = 0.5
+  ) +
+
+    # -------------------------
   # BASE LAYER (all bars)
   # -------------------------
   ggplot2::geom_col(
@@ -94,6 +114,10 @@ plot_monthly_wheel <- function(df, title = NULL) {
       values = c(
         above = "#5B2C83",
         below = "grey70"
+      ),
+      labels = c(
+        above = "Above threshold",
+        below = "Below threshold"
       )
     ) +
 
@@ -127,7 +151,9 @@ plot_monthly_wheel <- function(df, title = NULL) {
       axis.title = element_blank(),
       axis.text.y = element_blank(),
       panel.grid = element_blank(),
-      legend.title = element_blank()
+      axis.text.x = element_text(size = 14),
+      legend.title = element_blank(),
+      legend.position = "none"
     ) +
 
     ggplot2::labs(title = title)
@@ -146,7 +172,7 @@ plot_monthly_wheel <- function(df, title = NULL) {
 #   classify_months(threshold = 0.75)
 #
 # plot_monthly_wheel(plot_df, "Membranipora membranacea – MAG")
-#
+
 
 if (!dir.exists("abundance_wheels")) {
   dir.create("abundance_wheels")
@@ -176,8 +202,8 @@ for (sp in all_species) {
 
     # generate plot
     p <- plot_monthly_wheel(
-      plot_df,
-      title = paste(sp, "-", reg)
+      plot_df
+      # title = paste(sp, "-", reg)
     )
 
     # safe filename
