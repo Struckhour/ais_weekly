@@ -224,10 +224,10 @@ dfMonths <- dfRawClean %>%
   # Normalize within region × species × year(?)
   group_by(region, species) %>%
   mutate(
-    normMeanLogConc = if (all(is.na(meanPosLogConc))) {
+    normMeanLogConc = if (all(is.na(meanLogConc))) {
       NA_real_
     } else {
-      meanLogConc / max(meanPosLogConc, na.rm = TRUE)
+      meanLogConc / max(meanLogConc, na.rm = TRUE)
     },
     normPosMeanLogConc = if (all(is.na(meanPosLogConc))) {
       NA_real_
