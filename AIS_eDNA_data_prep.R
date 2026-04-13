@@ -181,28 +181,41 @@ dfRawClean[num_vars] <- lapply(dfRawClean[num_vars], as.numeric)
 # 11. Week‑scale summary -------------------------------------------------------
 # ───────────────────────────────────────────────────────────────────────────────
 dfWeeks <- dfRawClean %>%
-  select(region, species, date, concentration, month, temp, sal, month_reordered) %>%
+  select(region, species, date, concentration, logConc, month, temp, sal, pH, turb, tds, chl, tss, month_reordered) %>%
   group_by(region, species) %>%
   # Week index relative to first sample in that reg.spp group
   mutate(
-    sampWeek = floor(as.period(date - min(date)) / weeks()) + 1
+    sampWeek = floor(as.period(date - min(date)) / weeks()) + 1,
+    day_of_year = yday(date),
+    week_of_year = floor((day_of_year - 1) / 7) + 1
   ) %>%
   ungroup() %>%
-  group_by(region, species, sampWeek, month_reordered) %>%
+  group_by(region, species, week_of_year) %>%
   summarise(
     nReps      = n(),
     meanConc   = mean(concentration, na.rm = TRUE),
+    meanLogConc = mean(logConc, na.rm = TRUE),
     sdConc     = sd(concentration,  na.rm = TRUE),
    # date       = first(date),                     # representative date
   #  month      = first(month),
     meanTemp   = mean(temp, na.rm = TRUE),
     meanSal    = mean(sal,  na.rm = TRUE),
+    meanPH   = mean(pH, na.rm = TRUE),
+    meanTurb    = mean(turb,  na.rm = TRUE),
+    meanTds   = mean(tds, na.rm = TRUE),
+    meanChl    = mean(chl,  na.rm = TRUE),
+    meanTss    = mean(tss,  na.rm = TRUE),
    # month_reordered = first(month_reordered),
     .groups = "drop"
   ) %>%
   # Scale concentration 0‑1 within each region × species
   group_by(region, species) %>%
-  mutate(scaleConc = scale_propMinAIS(meanConc)) %>%
+  mutate(
+    scaleConc = scale_propMinAIS(meanConc),
+    scaleLogConc = scale_propMinAIS(meanLogConc),
+    scaleTemp = scale_propMinAIS(meanTemp),
+    scaleSal = scale_propMinAIS(meanSal)
+    ) %>%
   ungroup()
 
 # ───────────────────────────────────────────────────────────────────────────────

@@ -81,3 +81,34 @@ ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region)) +
 
 
 
+
+
+#pH
+
+library(tidyverse)
+library(lubridate)
+
+# Clean and prepare temperature data
+metadata_pH <- metadata %>%
+  mutate(
+    pH = as.numeric(pH),  # convert to numeric
+    region = factor(region)                 # only levels that exist
+  ) %>%
+  filter(!is.na(pH))              # remove missing temperatures
+
+
+metadata_pH <- metadata_pH %>% filter(region == "BOF")
+
+# Plot temperature over time by region
+ggplot(metadata_pH, aes(x = date, y = pH, color = region)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = FALSE) +
+  theme_classic() +
+  labs(
+    title = "pH Over Time by Region",
+    x = "Date",
+    y = "pH",
+    color = "Region"
+  )
+
+
