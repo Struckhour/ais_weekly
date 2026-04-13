@@ -1,12 +1,16 @@
+library(randomForest)
+library(zoo)
+
 source('./AIS_eDNA_data_prep.R')
 
 sp <- "Membranipora membranacea"
+sp <- "Botrylloides violaceus"
+sp <- "Ciona intestinalis"
+sp <- "Carcinus maenas"
 
 df_sp <- dfWeeks %>%
   filter(species == sp)
 
-library(randomForest)
-library(zoo)
 
 df_sp_clean <- df_sp %>%
   as.data.frame() %>%
@@ -16,11 +20,12 @@ df_sp_clean <- df_sp %>%
     is.finite(meanTemp),
     is.finite(meanSal),
     is.finite(meanPH),
+    is.finite(meanLat)
   )
 
 
 fit <- randomForest(
-  scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH,
+  scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH + meanLat,
   data = df_sp_clean
 )
 
@@ -31,6 +36,7 @@ profiles <- df_sp_clean %>%
     meanTemp = mean(meanTemp, na.rm = TRUE),
     meanSal  = mean(meanSal, na.rm = TRUE),
     meanPH  = mean(meanPH, na.rm = TRUE),
+    meanLat = mean(meanLat, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   complete(region, week_of_year = 1:52)
@@ -43,6 +49,7 @@ profiles <- profiles %>%
     meanTemp = zoo::na.approx(meanTemp, week_of_year, na.rm = FALSE, rule = 2),
     meanSal  = zoo::na.approx(meanSal,  week_of_year, na.rm = FALSE, rule = 2),
     meanPH  = zoo::na.approx(meanPH,  week_of_year, na.rm = FALSE, rule = 2),
+    meanLat  = zoo::na.approx(meanLat,  week_of_year, na.rm = FALSE, rule = 2)
   ) %>%
   ungroup()
 
@@ -117,7 +124,7 @@ partialPlot(fit, df_sp_clean, x.var = "week_of_year")
 partialPlot(fit, df_sp_clean, x.var = "meanTemp")
 partialPlot(fit, df_sp_clean, x.var = "meanSal")
 partialPlot(fit, df_sp_clean, x.var = "meanPH")
-
+partialPlot(fit, df_sp_clean, x.var = "meanLat")
 
 
 
@@ -204,6 +211,96 @@ partialPlot(fit, df_sp_clean, x.var = "meanTemp")
 partialPlot(fit, df_sp_clean, x.var = "meanSal")
 partialPlot(fit, df_sp_clean, x.var = "meanPH")
 
+
+fit
+
+
+
+###############################################################
+###############################################################
+###############################################################
+#no week_of_year, but latitude added as input
+
+fit <- randomForest(
+  scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
+  data = df_sp_clean,
+  importance = TRUE
+)
+
+
+profiles <- df_sp_clean %>%
+  group_by(region, week_of_year) %>%
+  summarise(
+    meanTemp = mean(meanTemp, na.rm = TRUE),
+    meanSal  = mean(meanSal, na.rm = TRUE),
+    meanPH = mean(meanPH, na.rm = TRUE),
+    meanLat = mean(meanLat, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  complete(region, week_of_year = 1:52)
+
+
+profiles <- profiles %>%
+  group_by(region) %>%
+  arrange(week_of_year) %>%
+  mutate(
+    meanTemp = zoo::na.approx(meanTemp, week_of_year, na.rm = FALSE, rule = 2),
+    meanSal  = zoo::na.approx(meanSal,  week_of_year, na.rm = FALSE, rule = 2),
+    meanPH = zoo::na.approx(meanPH, week_of_year, na.rm = FALSE, rule = 2),
+    meanLat = zoo::na.approx(meanLat, week_of_year, na.rm = FALSE, rule = 2)
+  ) %>%
+  ungroup()
+
+
+profiles$pred <- predict(fit, newdata = profiles)
+
+
+
+
+ggplot(profiles, aes(x = week_of_year, y = pred, color = region)) +
+  geom_line(linewidth = 1.2) +
+  scale_x_continuous(breaks = seq(1, 52, by = 4)) +
+  labs(
+    title = sp,
+    x = "Week of year",
+    y = "Predicted scaled log concentration",
+    color = "Region"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank()
+  )
+
+df_sp_clean$pred <- predict(fit, newdata = df_sp_clean)
+
+ggplot(df_sp_clean, aes(x = pred, y = scaleLogConc)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(
+    x = "Predicted",
+    y = "Observed",
+    title = paste("Predicted vs Observed —", sp)
+  ) +
+  theme_minimal()
+
+
+#VALUES
+importance(fit)
+varImpPlot(fit)
+
+partialPlot(fit, df_sp_clean, x.var = "meanTemp")
+partialPlot(fit, df_sp_clean, x.var = "meanSal")
+partialPlot(fit, df_sp_clean, x.var = "meanPH")
+partialPlot(fit, df_sp_clean, x.var = "meanLat")
+
+fit
+
+
+
+
+
+
+
 #################################################
 #TEST THRESHOLD???
 #################################################
@@ -287,7 +384,7 @@ df_sp_marine <- df_sp_clean %>%
   filter(meanSal > 25, meanPH < 8.5 & meanPH > 7.5)
 
 fit_marine <- randomForest(
-  scaleLogConc ~ meanTemp + meanSal + meanPH,
+  scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
   data = df_sp_marine
 )
 
@@ -299,6 +396,7 @@ profiles <- df_sp_marine %>%
     meanTemp = mean(meanTemp, na.rm = TRUE),
     meanSal  = mean(meanSal, na.rm = TRUE),
     meanPH = mean(meanPH, na.rm = TRUE),
+    meanLat = mean(meanLat, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   complete(region, week_of_year = 1:52)
@@ -310,7 +408,8 @@ profiles <- profiles %>%
   mutate(
     meanTemp = zoo::na.approx(meanTemp, week_of_year, na.rm = FALSE, rule = 2),
     meanSal  = zoo::na.approx(meanSal,  week_of_year, na.rm = FALSE, rule = 2),
-    meanPH = zoo::na.approx(meanPH, week_of_year, na.rm = FALSE, rule = 2)
+    meanPH = zoo::na.approx(meanPH, week_of_year, na.rm = FALSE, rule = 2),
+    meanLat = zoo::na.approx(meanLat, week_of_year, na.rm = FALSE, rule = 2)
   ) %>%
   ungroup()
 
@@ -365,109 +464,6 @@ partialPlot(fit_marine, df_sp_marine, x.var = "meanPH")
 ###############################################################
 ###############################################################
 ###############################################################
-#JUST WEEK
-
-
-fit <- randomForest(
-  scaleLogConc ~ week_of_year,
-  data = df_sp_clean
-)
-
-
-profiles <- df_sp_clean %>%
-  group_by(region, week_of_year) %>%
-  summarise(
-    meanTemp = mean(meanTemp, na.rm = TRUE),
-    meanSal  = mean(meanSal, na.rm = TRUE),
-    meanPH  = mean(meanPH, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  complete(region, week_of_year = 1:52)
-
-
-profiles <- profiles %>%
-  group_by(region) %>%
-  arrange(week_of_year) %>%
-  mutate(
-    meanTemp = zoo::na.approx(meanTemp, week_of_year, na.rm = FALSE, rule = 2),
-    meanSal  = zoo::na.approx(meanSal,  week_of_year, na.rm = FALSE, rule = 2),
-    meanPH  = zoo::na.approx(meanPH,  week_of_year, na.rm = FALSE, rule = 2),
-  ) %>%
-  ungroup()
-
-
-profiles$pred <- predict(fit, newdata = profiles)
-
-
-
-
-ggplot(profiles, aes(x = week_of_year, y = pred, color = region)) +
-  geom_line(linewidth = 1.2) +
-  scale_x_continuous(breaks = seq(1, 52, by = 4)) +
-  labs(
-    title = sp,
-    x = "Week of year",
-    y = "Predicted scaled log concentration",
-    color = "Region"
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid.minor = element_blank()
-  )
-
-
-peaks <- profiles %>%
-  group_by(region) %>%
-  summarise(
-    peak_week = week_of_year[which.max(pred)],
-    peak_val  = max(pred),
-    .groups = "drop"
-  )
-
-ggplot(profiles, aes(x = week_of_year, y = pred, color = region)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(data = peaks, aes(x = peak_week, y = peak_val), size = 3) +
-  labs(
-    title = paste0(sp, " (predicted seasonal curves)"),
-    x = "Week of year",
-    y = "Predicted scaled log concentration"
-  ) +
-  theme_minimal()
-
-
-df_sp_clean$pred <- predict(fit, newdata = df_sp_clean)
-
-
-
-ggplot(df_sp_clean, aes(x = pred, y = scaleLogConc)) +
-  geom_point(alpha = 0.4) +
-  geom_abline(slope = 1, intercept = 0, color = "red") +
-  labs(
-    x = "Predicted",
-    y = "Observed",
-    title = paste("Predicted vs Observed —", sp)
-  ) +
-  theme_minimal()
-
-
-
-#VALUES
-importance(fit)
-varImpPlot(fit)
-cor(df_sp_clean$pred, df_sp_clean$scaleLogConc)^2
-rmse <- sqrt(mean((df_sp_clean$scaleLogConc - df_sp_clean$pred)^2))
-rmse
-
-fit
-
-# df_sp_base <- as.data.frame(df_sp_clean)
-
-partialPlot(fit, df_sp_clean, x.var = "week_of_year")
-partialPlot(fit, df_sp_clean, x.var = "meanTemp")
-partialPlot(fit, df_sp_clean, x.var = "meanSal")
-partialPlot(fit, df_sp_clean, x.var = "meanPH")
-
-
 
 
 

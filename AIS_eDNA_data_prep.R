@@ -181,7 +181,7 @@ dfRawClean[num_vars] <- lapply(dfRawClean[num_vars], as.numeric)
 # 11. Week‑scale summary -------------------------------------------------------
 # ───────────────────────────────────────────────────────────────────────────────
 dfWeeks <- dfRawClean %>%
-  select(region, species, date, concentration, logConc, month, temp, sal, pH, turb, tds, chl, tss, month_reordered) %>%
+  select(region, species, date, concentration, logConc, month, temp, sal, pH, turb, tds, chl, tss, decimalLatitude, month_reordered) %>%
   group_by(region, species) %>%
   # Week index relative to first sample in that reg.spp group
   mutate(
@@ -205,6 +205,7 @@ dfWeeks <- dfRawClean %>%
     meanTds   = mean(tds, na.rm = TRUE),
     meanChl    = mean(chl,  na.rm = TRUE),
     meanTss    = mean(tss,  na.rm = TRUE),
+    meanLat    = mean(decimalLatitude, na.rm = TRUE),
    # month_reordered = first(month_reordered),
     .groups = "drop"
   ) %>%
