@@ -13,7 +13,7 @@ hybrid_color <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#fb8072", "#ABDDD
 
 # Prepare data: add "GOM", filter dates, and add first-letter month column
 dfRaw_window <- dfRawClean %>%
-  filter(date >= as.Date("2013-06-01") & date <= as.Date("2024-05-31")) %>%
+  filter(date >= as.Date("2013-06-01") & date <= as.Date("2024-10-31")) %>%
   mutate(month_letter = substr(month.abb[month(date)], 1, 1))
 
 # Plot with actual dates on x-axis but labeled with month_letter

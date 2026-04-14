@@ -112,3 +112,80 @@ ggplot(metadata_pH, aes(x = date, y = pH, color = region)) +
   )
 
 
+
+
+
+
+
+##################
+#DATA COVERAGE
+##################
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+coverage_df <- metadata %>%
+  dplyr::select(
+    region,
+    date,
+    waterTemp_C,
+    salinity_ppt,
+    pH,
+    turbidity_NTU,
+    chlorophyll
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      c(waterTemp_C, salinity_ppt, pH, turbidity_NTU, chlorophyll),
+      as.character
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    cols = c(waterTemp_C, salinity_ppt, pH, turbidity_NTU, chlorophyll),
+    names_to = "property",
+    values_to = "value"
+  ) %>%
+  dplyr::mutate(
+    value = na_if(value, "N/A"),
+    value = na_if(value, ""),
+    property = dplyr::recode(
+      property,
+      waterTemp_C   = "Temperature",
+      salinity_ppt  = "Salinity",
+      pH            = "pH",
+      turbidity_NTU = "Turbidity",
+      chlorophyll   = "Chlorophyll"
+    ),
+    region_property = paste(region, property, sep = " - ")
+  ) %>%
+  dplyr::filter(!is.na(value))
+
+
+ggplot(coverage_df, aes(x = date, y = property, color = property)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_manual(
+    values = c(
+      "Temperature" = "#e66101",
+      "Salinity" = "#1f78b4",
+      "pH" = "#984ea3",
+      "Turbidity" = "#4daf4a",
+      "Chlorophyll" = "#a65628"
+    )
+  ) +
+  scale_x_date(
+    date_breaks = "1 month",
+    date_labels = "%b\n%Y"
+  ) +
+  facet_grid(region ~ ., scales = "free_y", space = "free_y") +
+  theme_classic() +
+  theme(
+    panel.border = element_rect(color = "grey70", fill = NA, linewidth = 0.5),
+    panel.spacing.y = unit(0.6, "lines"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(
+    x = "Date",
+    y = NULL,
+    title = "Environmental data coverage by region and property"
+  )

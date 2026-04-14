@@ -62,7 +62,6 @@ get_correlations <- function(df, property) {
       .groups = "drop"
     )
 }
-library(ggplot2)
 
 cor_df <- get_correlations(propdf, "temp")
 cor_df <- get_correlations(propdf, "pH")

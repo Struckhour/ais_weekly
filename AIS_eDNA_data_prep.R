@@ -55,10 +55,12 @@ metadata <- read.csv(
   # Remove plate blanks / negative controls: keep only true samples
   filter(is.na(controlType))
 
-#REMOVE RIDICULOUS PH
+#CHANGE RIDICULOUS PH to NA
 metadata <- metadata %>%
-  dplyr::mutate(pH = as.numeric(pH)) %>%
-  dplyr::filter(pH > 0, pH < 10)
+  dplyr::mutate(
+    pH = as.numeric(pH),
+    pH = dplyr::if_else(pH > 0 & pH < 10, pH, NA_real_)
+  )
 
 # ── OPTIONAL: save coordinates for static map (run once then comment out) ──
 # metadata %>%
