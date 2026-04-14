@@ -97,7 +97,7 @@ metadata_pH <- metadata %>%
   filter(!is.na(pH))              # remove missing temperatures
 
 
-metadata_pH <- metadata_pH %>% filter(region == "BOF")
+# metadata_pH <- metadata_pH %>% filter(region == "BOF")
 
 # Plot temperature over time by region
 ggplot(metadata_pH, aes(x = date, y = pH, color = region)) +

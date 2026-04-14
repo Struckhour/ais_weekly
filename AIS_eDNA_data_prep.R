@@ -55,6 +55,11 @@ metadata <- read.csv(
   # Remove plate blanks / negative controls: keep only true samples
   filter(is.na(controlType))
 
+#REMOVE RIDICULOUS PH
+metadata <- metadata %>%
+  dplyr::mutate(pH = as.numeric(pH)) %>%
+  dplyr::filter(pH > 0, pH < 10)
+
 # ── OPTIONAL: save coordinates for static map (run once then comment out) ──
 # metadata %>%
 #   distinct(samplingStation, decimalLatitude, decimalLongitude) %>%
@@ -215,7 +220,8 @@ dfWeeks <- dfRawClean %>%
     scaleConc = scale_propMinAIS(meanConc),
     scaleLogConc = scale_propMinAIS(meanLogConc),
     scaleTemp = scale_propMinAIS(meanTemp),
-    scaleSal = scale_propMinAIS(meanSal)
+    scaleSal = scale_propMinAIS(meanSal),
+    scalePH = scale_propMinAIS(meanPH)
     ) %>%
   ungroup()
 

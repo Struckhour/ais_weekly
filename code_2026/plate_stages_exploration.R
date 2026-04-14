@@ -4,6 +4,18 @@ View(plateAbundance)
 library(tidyverse)
 library(lubridate)
 
+life_state_colors <- c("#1b9e77",
+                         "#d95f02",
+                         "#7570b3",
+                         "#e7298a",
+                         "#66a61e")
+
+alt_colors <- c("#e41a1c",
+  "#377eb8",
+  "#4daf4a",
+  "#984ea3",
+  "#ff7f00")
+
 # 1. Define global state order (consistent everywhere)
 all_states <- plateAbundance %>%
   separate_rows(State, sep = ",\\s*") %>%
@@ -29,8 +41,18 @@ plateStates <- plateAbundance %>%
 # 3. Plot
 ggplot(plateStates, aes(x = date, y = state_row, fill = State)) +
   geom_tile(width = 8, height = 0.8) +
+  scale_fill_manual(
+    values = alt_colors,
+    breaks = c("S", "R", "G", "D", "B"),
+    labels = c(
+      "S" = "Senescence",
+      "R" = "Recruitment",
+      "G" = "Growth",
+      "D" = "Dieoff",
+      "B" = "Breeding"
+    )
+  ) +
   facet_grid(region ~ species) +
-  scale_fill_brewer(palette = "Set2") +
   scale_y_continuous(
     breaks = 1:length(all_states),
     labels = all_states

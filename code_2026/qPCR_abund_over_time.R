@@ -5,7 +5,11 @@ library(dplyr)
 library(forcats)
 library(lubridate)
 
+color_vec <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#046c9a", "#ABDDDE", "#d3dddc")
 
+other_color_vec <- c("#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3")
+
+hybrid_color <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#fb8072", "#ABDDDE", "#d3dddc")
 
 # Prepare data: add "GOM", filter dates, and add first-letter month column
 dfRaw_window <- dfRawClean %>%
@@ -14,8 +18,9 @@ dfRaw_window <- dfRawClean %>%
 
 # Plot with actual dates on x-axis but labeled with month_letter
 ggplot(dfRaw_window, aes(x = date, y = concentration + 1, color = region)) +
-  geom_point(size = 2, alpha = 0.7) +
+  geom_point(size = 1, alpha = 0.5) +
   geom_smooth(method = "loess", se = TRUE, color = "black") +
+  scale_color_manual(values = hybrid_color) +
   scale_y_log10() +
   facet_grid(region ~ species) +  # rows = regions, columns = species
   scale_x_date(
