@@ -3,11 +3,6 @@ library(zoo)
 
 source('./AIS_eDNA_data_prep.R')
 
-sp <- "Membranipora membranacea"
-sp <- "Botrylloides violaceus"
-sp <- "Ciona intestinalis"
-sp <- "Carcinus maenas"
-
 df_sp <- dfWeeks %>%
   filter(species == sp)
 
@@ -24,9 +19,192 @@ df_sp_clean <- df_sp %>%
   )
 
 
+
+extract_rf_summary <- function(model_result, species_name, model_name) {
+  fit <- model_result$fit
+
+  imp <- randomForest::importance(fit)
+
+  if ("%IncMSE" %in% colnames(imp)) {
+    imp_vals <- imp[, "%IncMSE"]
+  } else {
+    imp_vals <- rep(NA_real_, nrow(imp))
+  }
+
+  imp_df <- tibble::tibble(
+    variable = rownames(imp),
+    incMSE = imp_vals
+  ) %>%
+    tidyr::pivot_wider(
+      names_from = variable,
+      values_from = incMSE
+    )
+
+  dplyr::bind_cols(
+    tibble::tibble(
+      species = species_name,
+      model = model_name
+    ),
+    model_result$metrics,
+    imp_df
+  )
+}
+
+run_rf_model <- function(df_sp_clean,
+                         model_formula,
+                         profile_vars,
+                         importance = TRUE,
+                         ntree = 500) {
+
+  df_model <- df_sp_clean
+
+  fit <- randomForest::randomForest(
+    formula = model_formula,
+    data = df_model,
+    importance = importance,
+    ntree = ntree
+  )
+
+  profiles <- df_model %>%
+    dplyr::group_by(region, week_of_year) %>%
+    dplyr::summarise(
+      dplyr::across(dplyr::all_of(profile_vars), ~ mean(.x, na.rm = TRUE)),
+      .groups = "drop"
+    ) %>%
+    tidyr::complete(region, week_of_year = 1:52) %>%
+    dplyr::group_by(region) %>%
+    dplyr::arrange(week_of_year) %>%
+    dplyr::mutate(
+      dplyr::across(
+        dplyr::all_of(profile_vars),
+        ~ zoo::na.approx(.x, week_of_year, na.rm = FALSE, rule = 2)
+      )
+    ) %>%
+    dplyr::ungroup()
+
+  profiles$pred <- predict(fit, newdata = profiles)
+  df_model$pred <- predict(fit, newdata = df_model)
+
+  r2_train <- cor(df_model$pred, df_model$scaleLogConc)^2
+  rmse <- sqrt(mean((df_model$scaleLogConc - df_model$pred)^2))
+  var_explained <- fit$rsq[length(fit$rsq)] * 100
+
+  list(
+    fit = fit,
+    profiles = profiles,
+    data = df_model,
+    metrics = tibble::tibble(
+      r2_train = r2_train,
+      rmse = rmse,
+      var_explained = var_explained,
+      n = nrow(df_model)
+    )
+  )
+}
+
+prep_species_data <- function(df, species_name, required_vars) {
+  df %>%
+    dplyr::filter(species == species_name) %>%
+    as.data.frame() %>%
+    dplyr::filter(dplyr::if_all(dplyr::all_of(required_vars), is.finite))
+}
+
+
+
+
+
+
+
+
+#####################
+#LOOP THROUGH SPECIES AND BUILD MODELS
+#####################
+
+all_species <- unique(dfWeeks$species)
+all_results <- list()
+
+for (sp in all_species) {
+
+  df_sp_clean <- prep_species_data(
+    df = dfWeeks,
+    species_name = sp,
+    required_vars = c("scaleLogConc", "week_of_year", "meanTemp", "meanSal", "meanPH", "meanLat")
+  )
+
+  m1 <- run_rf_model(
+    df_sp_clean = df_sp_clean,
+    model_formula = scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH + meanLat,
+    profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
+  )
+
+  m2 <- run_rf_model(
+    df_sp_clean = df_sp_clean,
+    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH,
+    profile_vars = c("meanTemp", "meanSal", "meanPH")
+  )
+
+  m3 <- run_rf_model(
+    df_sp_clean = df_sp_clean,
+    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
+    profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
+  )
+
+
+  df_sp_typical <- df_sp_clean %>%
+    dplyr::filter(meanSal > 25, meanPH > 7.8)
+  m4 <- run_rf_model(
+    df_sp_clean = df_sp_typical,
+    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
+    profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
+  )
+
+  summary_table <- dplyr::bind_rows(
+    extract_rf_summary(m1, sp, "week + temp + sal + pH + lat"),
+    extract_rf_summary(m2, sp, "temp + sal + pH"),
+    extract_rf_summary(m3, sp, "temp + sal + pH + lat"),
+    extract_rf_summary(m4, sp, "typical sal/pH + temp + sal + pH + lat")
+  ) %>%
+    dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
+
+  all_results[[sp]] <- summary_table
+}
+
+summary_table <- dplyr::bind_rows(all_results)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sp <- "Membranipora membranacea"
+sp <- "Botrylloides violaceus"
+sp <- "Ciona intestinalis"
+sp <- "Carcinus maenas"
+
+
+
 fit <- randomForest(
   scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH + meanLat,
-  data = df_sp_clean
+  data = df_sp_clean,
+  importance = TRUE
 )
 
 
@@ -140,7 +318,7 @@ partialPlot(fit, df_sp_clean, x.var = "meanLat")
 ###############################################################
 ###############################################################
 ###############################################################
-#no week_of_year as input
+#no week_of_year or Lat as input
 
 fit <- randomForest(
   scaleLogConc ~ meanTemp + meanSal + meanPH,
@@ -385,7 +563,8 @@ df_sp_marine <- df_sp_clean %>%
 
 fit_marine <- randomForest(
   scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
-  data = df_sp_marine
+  data = df_sp_marine,
+  importance = TRUE
 )
 
 
