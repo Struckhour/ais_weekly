@@ -37,7 +37,8 @@ extract_rf_summary <- function(model_result, species_name, model_name) {
   ) %>%
     tidyr::pivot_wider(
       names_from = variable,
-      values_from = incMSE
+      values_from = incMSE,
+      names_prefix = "IncMSE_"
     )
 
   dplyr::bind_cols(
