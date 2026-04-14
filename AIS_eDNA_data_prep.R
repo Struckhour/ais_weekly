@@ -158,12 +158,12 @@ month_labels_split <- split(month_labels_df, ~region)
 # ───────────────────────────────────────────────────────────────────────────────
 # 8. Remove known Halifax outliers (19‑Oct-2023 samples) -----------------------
 # ───────────────────────────────────────────────────────────────────────────────
-# outlierHal <- dfRaw %>%
-#   filter(region == "HAL", date == "2023-10-19" | species == "Didemnum vexillum")
+outlierHal <- dfRaw %>%
+  filter(region == "HAL", date == "2023-10-19" | species == "Didemnum vexillum")
 
-dfRawClean <- dfRaw
-# dfRawClean <- dfRaw %>%
-  # anti_join(outlierHal, by = c("region", "date", "species"))
+# dfRawClean <- dfRaw
+dfRawClean <- dfRaw %>%
+  anti_join(outlierHal, by = c("region", "date", "species"))
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 7. Colour palette matched to static map (for consistent figures) -------------

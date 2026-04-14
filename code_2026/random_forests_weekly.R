@@ -3,8 +3,13 @@ library(zoo)
 
 source('./AIS_eDNA_data_prep.R')
 
+sp <- "Didemnum vexillum"
+
 df_sp <- dfWeeks %>%
-  filter(species == sp)
+  filter(species == sp) %>%
+  group_by(region) %>%
+  filter(sum(scaleLogConc > 0, na.rm = TRUE) >= 5) %>%
+  ungroup()
 
 
 df_sp_clean <- df_sp %>%
@@ -18,6 +23,10 @@ df_sp_clean <- df_sp %>%
     is.finite(meanLat)
   )
 
+df_sp_range <- df_sp_clean %>%
+  group_by(region) %>%
+  filter(sum(scaleLogConc > 0, na.rm = TRUE) >= 5) %>%
+  ungroup()
 
 
 extract_rf_summary <- function(model_result, species_name, model_name) {
@@ -66,10 +75,12 @@ run_rf_model <- function(df_sp_clean,
     ntree = ntree
   )
 
+  summary_vars <- setdiff(profile_vars, c("region", "week_of_year"))
+
   profiles <- df_model %>%
     dplyr::group_by(region, week_of_year) %>%
     dplyr::summarise(
-      dplyr::across(dplyr::all_of(profile_vars), ~ mean(.x, na.rm = TRUE)),
+      dplyr::across(dplyr::all_of(summary_vars), ~ mean(.x, na.rm = TRUE)),
       .groups = "drop"
     ) %>%
     tidyr::complete(region, week_of_year = 1:52) %>%
@@ -77,7 +88,7 @@ run_rf_model <- function(df_sp_clean,
     dplyr::arrange(week_of_year) %>%
     dplyr::mutate(
       dplyr::across(
-        dplyr::all_of(profile_vars),
+        dplyr::all_of(summary_vars),
         ~ zoo::na.approx(.x, week_of_year, na.rm = FALSE, rule = 2)
       )
     ) %>%
@@ -132,28 +143,39 @@ for (sp in all_species) {
     required_vars = c("scaleLogConc", "week_of_year", "meanTemp", "meanSal", "meanPH", "meanLat")
   )
 
+  df_sp_range <- df_sp_clean %>%
+    group_by(region) %>%
+    filter(sum(scaleLogConc > 0, na.rm = TRUE) >= 5) %>%
+    ungroup()
+
   m1 <- run_rf_model(
-    df_sp_clean = df_sp_clean,
+    df_sp_clean = df_sp_range,
     model_formula = scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH + meanLat,
-    profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
+    profile_vars = c("week_of_year", "meanTemp", "meanSal", "meanPH", "meanLat")
   )
 
   m2 <- run_rf_model(
-    df_sp_clean = df_sp_clean,
+    df_sp_clean = df_sp_range,
+    model_formula = scaleLogConc ~ week_of_year + meanLat,
+    profile_vars = c("week_of_year", "meanLat")
+  )
+
+  m3 <- run_rf_model(
+    df_sp_clean = df_sp_range,
     model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH,
     profile_vars = c("meanTemp", "meanSal", "meanPH")
   )
 
-  m3 <- run_rf_model(
-    df_sp_clean = df_sp_clean,
+  m4 <- run_rf_model(
+    df_sp_clean = df_sp_range,
     model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
     profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
   )
 
 
-  df_sp_typical <- df_sp_clean %>%
+  df_sp_typical <- df_sp_range %>%
     dplyr::filter(meanSal > 25, meanPH > 7.8)
-  m4 <- run_rf_model(
+  m5 <- run_rf_model(
     df_sp_clean = df_sp_typical,
     model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
     profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
@@ -161,9 +183,10 @@ for (sp in all_species) {
 
   summary_table <- dplyr::bind_rows(
     extract_rf_summary(m1, sp, "week + temp + sal + pH + lat"),
-    extract_rf_summary(m2, sp, "temp + sal + pH"),
-    extract_rf_summary(m3, sp, "temp + sal + pH + lat"),
-    extract_rf_summary(m4, sp, "typical sal/pH + temp + sal + pH + lat")
+    extract_rf_summary(m2, sp, "week and Lat only"),
+    extract_rf_summary(m3, sp, "temp + sal + pH"),
+    extract_rf_summary(m4, sp, "temp + sal + pH + lat"),
+    extract_rf_summary(m5, sp, "typical sal/pH + temp + sal + pH + lat")
   ) %>%
     dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
 
