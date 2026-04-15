@@ -77,7 +77,21 @@ classify_months <- function(df, threshold = 0.75) {
     )
 }
 
-plot_monthly_wheel <- function(df, title = NULL) {
+plot_monthly_wheel <- function(df, region, title = NULL) {
+
+  region_colors <- c(
+    MAG = "#00A08A",
+    PEI = "#446455",
+    HAL = "#CCAA4F",
+    BOF = "#5BBCD6",
+    GOM = "#fb8072"
+  )
+
+  if (!region %in% names(region_colors)) {
+    stop("Unknown region: ", region)
+  }
+
+  above_color <- region_colors[[region]]
 
   ggplot2::ggplot(df) +
 
@@ -115,7 +129,7 @@ plot_monthly_wheel <- function(df, title = NULL) {
 
     ggplot2::scale_fill_manual(
       values = c(
-        above = "#5B2C83",
+        above = above_color,
         below = "grey70"
       ),
       labels = c(
@@ -151,11 +165,11 @@ plot_monthly_wheel <- function(df, title = NULL) {
 
     ggplot2::theme_minimal() +
     ggplot2::theme(
-      axis.title = element_blank(),
-      axis.text.y = element_blank(),
-      panel.grid = element_blank(),
-      axis.text.x = element_text(size = 14),
-      legend.title = element_blank(),
+      axis.title = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      axis.text.x = ggplot2::element_text(size = 32),
+      legend.title = ggplot2::element_blank(),
       legend.position = "none"
     ) +
 
@@ -205,7 +219,8 @@ for (sp in all_species) {
 
     # generate plot
     p <- plot_monthly_wheel(
-      plot_df
+      df = plot_df,
+      region = reg
       # title = paste(sp, "-", reg)
     )
 
@@ -404,3 +419,314 @@ test_window_wilcox <- function(df_raw, species, region, window_res) {
 
 wilcox_result <- test_window_wilcox(dfRawClean, selected_species, selected_region, window_res)
 wilcox_result
+
+library(dplyr)
+library(purrr)
+library(tidyr)
+
+all_species <- sort(unique(dfRawClean$species))
+all_regions <- c("MAG", "PEI", "HAL", "BOF", "GOM")
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(tibble)
+
+collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) {
+
+  all_species <- sort(unique(df_monthly$species))
+  all_regions <- c("MAG", "PEI", "HAL", "BOF", "GOM")
+
+  combos <- expand.grid(
+    species = all_species,
+    region = all_regions,
+    stringsAsFactors = FALSE
+  )
+
+  results <- purrr::pmap_dfr(combos, function(species, region) {
+
+    # -------------------------
+    # monthly data for window calculation
+    # -------------------------
+    df_sub_monthly <- df_monthly %>%
+      dplyr::filter(
+        species == !!species,
+        region == !!region
+      )
+
+    if (nrow(df_sub_monthly) == 0) {
+      return(NULL)
+    }
+
+    plot_df <- df_sub_monthly %>%
+      prep_monthly_signal() %>%
+      interp_monthly_circular() %>%
+      classify_months(threshold = threshold)
+
+    window_res <- calc_window_simple(plot_df, threshold = threshold)
+
+    if (is.null(window_res)) {
+      return(NULL)
+    }
+
+    # -------------------------
+    # raw data for Wilcoxon test
+    # -------------------------
+    wilcox_result <- test_window_wilcox(
+      df_raw = df_raw,
+      species = species,
+      region = region,
+      window_res = window_res
+    )
+
+    if (is.null(wilcox_result)) {
+      return(NULL)
+    }
+
+    summary_wide <- wilcox_result$summary %>%
+      tidyr::pivot_wider(
+        names_from = window,
+        values_from = c(n, median, mean),
+        names_glue = "{.value}_{window}"
+      )
+
+    dplyr::bind_cols(
+      tibble::tibble(
+        species = species,
+        region = region,
+        start_month = window_res$start_month,
+        end_month = window_res$end_month,
+        wrap_around = window_res$wrap_around
+      ),
+      summary_wide,
+      tibble::as_tibble(wilcox_result$test)
+    )
+  })
+
+  results
+}
+
+wilcox_results_df <- collect_window_wilcox_results(
+  df_monthly = df,
+  df_raw = dfRawClean,
+  threshold = 0.75
+)
+
+
+region_colors <- c(
+  MAG = "#00A08A",
+  PEI = "#446455",
+  HAL = "#CCAA4F",
+  BOF = "#5BBCD6",
+  GOM = "#fb8072"
+)
+
+region_order <- c("MAG", "PEI", "HAL", "BOF", "GOM")
+
+species_order <- c(
+  "Membranipora membranacea",
+  "Botrylloides violaceus",
+  "Didemnum vexillum",
+  "Ciona intestinalis",
+  "Carcinus maenas"
+)
+
+plot_df <- wilcox_results_df %>%
+  filter(
+    !(
+      (species == "Didemnum vexillum" & region == "MAG") |
+        (species == "Ciona intestinalis" & region == "BOF")
+    )
+  ) %>%
+  mutate(
+    region = factor(region, levels = region_order),
+    species = factor(species, levels = species_order)
+  ) %>%
+  arrange(species, region)
+
+ggplot(plot_df, aes(x = prob_superiority, y = region, fill = region)) +
+  geom_col(width = 0.8) +
+  geom_vline(xintercept = 0.5, linetype = "dashed") +
+  geom_vline(xintercept = 0.25, linetype = "dashed") +
+  geom_vline(xintercept = 0.75, linetype = "dashed") +
+  geom_vline(xintercept = 1.0, linetype = "dashed") +
+  scale_fill_manual(values = region_colors) +
+  scale_x_continuous(limits = c(0, 1)) +
+  facet_grid(species ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  labs(
+    x = "Probability of superiority",
+    y = NULL,
+    title = "Probability of superiority (optimal period vs suboptimal period)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.placement = "outside",
+    strip.text.y.left = element_text(
+      angle = 0,
+      face = "italic",
+      hjust = 1
+    ),
+    panel.spacing.y = unit(0.6, "lines")
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################
+#STITCH TOGETHER PNGS
+##############################
+
+library(magick)
+
+regions <- c("MAG", "PEI", "HAL", "BOF", "GOM")
+
+species <- c(
+  "Membranipora membranacea",
+  "Botrylloides violaceus",
+  "Didemnum vexillum",
+  "Ciona intestinalis",
+  "Carcinus maenas"
+)
+
+species_file <- gsub(" ", "_", species)
+
+# -------------------------
+# panel/header dimensions
+# -------------------------
+panel_w <- 1800
+panel_h <- 1800
+
+row_header_w <- 500
+col_header_h <- 500
+header_text_size <- 140
+pad <- 40  # <-- adjust this (20–80 usually looks good)
+# -------------------------
+# column labels (top)
+# -------------------------
+species_labels <- lapply(species, function(sp) {
+  image_blank(width = panel_w, height = col_header_h, color = "white") |>
+    image_annotate(
+      text = sp,
+      size = header_text_size,
+      gravity = "center"
+    ) |>
+    image_border("white", paste0(pad, "x0"))
+})
+
+top_row <- image_append(image_join(species_labels))
+
+# -------------------------
+# row labels (left side)
+# IMPORTANT:
+# make canvas wide-and-short first,
+# rotate, then force exact final size
+# -------------------------
+region_labels <- lapply(regions, function(rg) {
+  image_blank(width = panel_h, height = row_header_w, color = "white") |>
+    image_annotate(
+      text = rg,
+      size = header_text_size,
+      gravity = "center",
+      weight = 700
+    ) |>
+    image_rotate(-90) |>
+    image_extent(
+      geometry = paste0(row_header_w, "x", panel_h),
+      gravity = "center",
+      color = "white"
+    )
+})
+
+left_col <- image_append(image_join(region_labels), stack = TRUE)
+
+# -------------------------
+# top-left corner
+# -------------------------
+corner <- image_blank(width = row_header_w, height = col_header_h, color = "white")
+top_full <- image_append(c(corner, top_row))
+
+# -------------------------
+# expected file layout
+# -------------------------
+expected <- expand.grid(
+  species = species_file,
+  region = regions,
+  stringsAsFactors = FALSE
+)
+
+expected$filename <- paste0(expected$species, "__", expected$region, ".png")
+
+files <- list.files("abundance_wheels", pattern = "\\.png$", full.names = TRUE)
+file_map <- setNames(files, basename(files))
+
+expected$path <- file_map[expected$filename]
+
+# blank placeholder for missing panels
+blank <- image_blank(width = panel_w, height = panel_h, color = "white")
+
+# ensure correct ordering
+expected$region <- factor(expected$region, levels = regions)
+expected$species <- factor(expected$species, levels = species_file)
+
+expected <- expected[order(expected$region, expected$species), ]
+
+# -------------------------
+# build rows
+# -------------------------
+
+
+rows <- lapply(split(expected, expected$region), function(df_row) {
+  imgs <- lapply(df_row$path, function(p) {
+    if (is.na(p)) {
+      blank
+    } else {
+      image_read(p) |>
+        image_resize(paste0(panel_w, "x", panel_h, "!"))
+    } |>
+      image_border("white", paste0(pad, "x0"))  # horizontal padding only
+  })
+  image_append(image_join(imgs))
+})
+
+final <- image_append(image_join(rows), stack = TRUE)
+
+# -------------------------
+# combine everything
+# -------------------------
+grid_with_labels <- image_append(c(left_col, final))
+final_labeled <- image_append(c(top_full, grid_with_labels), stack = TRUE)
+
+image_write(final_labeled, "saved_figures/combined_monthly_wheels.png")
+
+
+

@@ -1,3 +1,4 @@
 1) Halifax Didemnum vexillum outlier (qPCR) was removed
 2) Weird pH (three values, two were negative and one was +12) from Halifax was replaced with NA
 3) We used concentration (log copies/L) instead of detection rates because detection rates were often maxed out at 100% across seasons
+4) Probably something in discussion about low temperatures and dormancy for those 100% detection rates (warm winter waters?)

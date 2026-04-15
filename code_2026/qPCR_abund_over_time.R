@@ -9,7 +9,7 @@ color_vec <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#046c9a", "#ABDDDE",
 
 other_color_vec <- c("#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3")
 
-hybrid_color <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#fb8072", "#ABDDDE", "#d3dddc")
+hybrid_color <- c("#00A08A", "#446455", "#CCAA4F", "#5BBCD6", "#fb8072")
 
 # Prepare data: add "GOM", filter dates, and add first-letter month column
 dfRaw_window <- dfRawClean %>%
