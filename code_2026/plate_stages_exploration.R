@@ -4,26 +4,34 @@ View(plateAbundance)
 library(tidyverse)
 library(lubridate)
 
+
+
+
+
 life_state_colors <- c("#1b9e77",
-                         "#d95f02",
-                         "#7570b3",
-                         "#e7298a",
-                         "#66a61e")
+                       "#d95f02",
+                       "#7570b3",
+                       "#e7298a",
+                       "#66a61e")
 
 alt_colors <- c("#e41a1c",
-  "#377eb8",
-  "#4daf4a",
-  "#984ea3",
-  "#ff7f00")
+                "#ff7f00",
+                "#4daf4a",
+                "#377eb8",
+                "#984ea3"
+                )
 
-# 1. Define global state order (consistent everywhere)
-all_states <- plateAbundance %>%
-  separate_rows(State, sep = ",\\s*") %>%
-  mutate(State = trimws(State)) %>%
-  filter(State != "") %>%
-  distinct(State) %>%
-  arrange(State) %>%
-  pull(State)
+# 1. Define global state order explicitly
+# 1. Explicit order (TOP → BOTTOM)
+state_levels <- c("R", "G", "B", "S", "D")
+
+state_labels <- c(
+  "R" = "Recruitment",
+  "G" = "Growth",
+  "B" = "Breeding",
+  "S" = "Senescence",
+  "D" = "Dieoff"
+)
 
 # 2. Prepare data
 plateStates <- plateAbundance %>%
@@ -31,11 +39,12 @@ plateStates <- plateAbundance %>%
   separate_rows(State, sep = ",\\s*") %>%
   mutate(
     State = trimws(State),
+    State = factor(State, levels = state_levels),  # <-- KEY
     species = factor(species, levels = unique(species))
   ) %>%
-  filter(State != "") %>%
+  filter(!is.na(State)) %>%
   mutate(
-    state_row = as.numeric(factor(State, levels = all_states))
+    state_row = as.numeric(State)
   )
 
 # 3. Plot
@@ -43,22 +52,15 @@ ggplot(plateStates, aes(x = date, y = state_row, fill = State)) +
   geom_tile(width = 8, height = 0.8) +
   scale_fill_manual(
     values = alt_colors,
-    breaks = c("S", "R", "G", "D", "B"),
-    labels = c(
-      "S" = "Senescence",
-      "R" = "Recruitment",
-      "G" = "Growth",
-      "D" = "Dieoff",
-      "B" = "Breeding"
-    )
+    breaks = state_levels,      # <-- legend order fixed
+    labels = state_labels
   ) +
   facet_grid(region ~ species) +
-  scale_y_continuous(
-    breaks = 1:length(all_states),
-    labels = all_states
+  scale_y_reverse(              # <-- flips so first level is TOP
+    breaks = 1:length(state_levels),
+    labels = state_labels[state_levels]
   ) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b") +
-  guides(fill = guide_legend(reverse = TRUE)) +
   theme_classic() +
   theme(
     panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
