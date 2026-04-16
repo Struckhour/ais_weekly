@@ -534,11 +534,11 @@ plot_df <- wilcox_results_df %>%
   filter(
     !(
       (species == "Didemnum vexillum" & region == "MAG") |
-        (species == "Ciona intestinalis" & region == "BOF")
+       (species == "Ciona intestinalis" & region == "BOF")
     )
   ) %>%
   mutate(
-    region = factor(region, levels = region_order),
+    region = factor(region, levels = rev(region_order)),
     species = factor(species, levels = species_order)
   ) %>%
   arrange(species, region)
