@@ -108,7 +108,7 @@ run_rf_model <- function(df_sp_clean,
     metrics = tibble::tibble(
       r2_train = r2_train,
       rmse = rmse,
-      var_explained = var_explained,
+      `var_explained (OOB)` = var_explained,
       n = nrow(df_model)
     )
   )
@@ -150,43 +150,43 @@ for (sp in all_species) {
 
   m1 <- run_rf_model(
     df_sp_clean = df_sp_range,
-    model_formula = scaleLogConc ~ week_of_year + meanTemp + meanSal + meanPH + meanLat,
-    profile_vars = c("week_of_year", "meanTemp", "meanSal", "meanPH", "meanLat")
-  )
-
-  m2 <- run_rf_model(
-    df_sp_clean = df_sp_range,
     model_formula = scaleLogConc ~ week_of_year + meanLat,
     profile_vars = c("week_of_year", "meanLat")
   )
 
+  m2 <- run_rf_model(
+    df_sp_clean = df_sp_range,
+    model_formula = scaleLogConc ~ week_of_year + meanTemp + meanSal + meanLat,
+    profile_vars = c("week_of_year", "meanTemp", "meanSal", "meanLat")
+  )
+
   m3 <- run_rf_model(
     df_sp_clean = df_sp_range,
-    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH,
+    model_formula = scaleLogConc ~ meanTemp + meanSal,
     profile_vars = c("meanTemp", "meanSal", "meanPH")
   )
 
   m4 <- run_rf_model(
     df_sp_clean = df_sp_range,
-    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
+    model_formula = scaleLogConc ~ meanTemp + meanSal + meanLat,
     profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
   )
 
 
-  df_sp_typical <- df_sp_range %>%
-    dplyr::filter(meanSal > 25, meanPH > 7.8)
-  m5 <- run_rf_model(
-    df_sp_clean = df_sp_typical,
-    model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
-    profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
-  )
+  # df_sp_typical <- df_sp_range %>%
+  #   dplyr::filter(meanSal > 25, meanPH > 7.8)
+  # m5 <- run_rf_model(
+  #   df_sp_clean = df_sp_typical,
+  #   model_formula = scaleLogConc ~ meanTemp + meanSal + meanPH + meanLat,
+  #   profile_vars = c("meanTemp", "meanSal", "meanPH", "meanLat")
+  # )
 
   summary_table <- dplyr::bind_rows(
-    extract_rf_summary(m1, sp, "week + temp + sal + pH + lat"),
-    extract_rf_summary(m2, sp, "week and Lat only"),
-    extract_rf_summary(m3, sp, "temp + sal + pH"),
-    extract_rf_summary(m4, sp, "temp + sal + pH + lat"),
-    extract_rf_summary(m5, sp, "typical sal/pH + temp + sal + pH + lat")
+    extract_rf_summary(m1, sp, "week + lat"),
+    extract_rf_summary(m2, sp, "week + lat + temp + sal"),
+    extract_rf_summary(m3, sp, "temp + sal"),
+    extract_rf_summary(m4, sp, "lat + temp + sal")
+    # extract_rf_summary(m5, sp, "typical sal/pH + temp + sal + pH + lat")
   ) %>%
     dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
 
@@ -197,12 +197,32 @@ summary_table <- dplyr::bind_rows(all_results)
 
 
 
+summary_table <- summary_table %>%
+  dplyr::mutate(
+    species = factor(species, levels = rev(species_order))
+  ) %>%
+  dplyr::arrange(species)
 
+summary_table_print <- summary_table %>%
+  select(species, model, `var_explained (OOB)`) %>%
+  filter(species != "Didemnum vexillum")
 
-
-
-
-
+summary_table_print %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  ) %>%
+  dplyr::arrange(species, model) %>%
+  dplyr::group_by(species) %>%
+  dplyr::mutate(
+    species_display = ifelse(dplyr::row_number() == 1, as.character(species), "")
+  ) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(species_display, everything(), -species) %>%
+  dplyr::rename(species = species_display) %>%
+  gt() %>%
+  fmt_number(columns = c(`var_explained (OOB)`), decimals = 2) %>%
+  tab_header(title = "Random Forest Model Results") %>%
+  cols_align(align = "center", -species)
 
 
 

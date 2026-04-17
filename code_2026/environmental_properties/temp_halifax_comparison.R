@@ -3,14 +3,27 @@ new_data <- read_xlsx(
   na = ""
 )
 
+new_data <- new_data %>% select(date, temp, PSU, ts) %>%
+  filter(ts >= as.Date("2023-04-27") & ts <= as.Date("2024-06-3"))
+
+new_data_clean <- new_data %>%
+  mutate(
+    date = as.Date(date)
+  )
+
+sbe_daily <- new_data_clean %>%
+  group_by(date) %>%
+  summarise(
+    temp = mean(temp, na.rm = TRUE),
+    PSU = mean(PSU, na.rm = TRUE),
+    .groups = "drop"
+  )
 
 
 hal_met <- metadata %>% filter(region == "HAL")
 
 hal_met <- hal_met %>% select(date, year, month, region, salinity_ppt, waterTemp_C)
 
-new_data <- new_data %>% select(date, temp, PSU, ts) %>%
-  filter(ts >= as.Date("2023-04-27") & ts <= as.Date("2024-06-3"))
 
 
 
@@ -22,20 +35,11 @@ hal_met_clean <- hal_met %>%
   ) %>%
   filter(!is.na(waterTemp_C) | !is.na(salinity_ppt))
 
-new_data_clean <- new_data %>%
-  mutate(
-    date = as.Date(date)
-  )
 
 
 
-sbe_daily <- new_data_clean %>%
-  group_by(date) %>%
-  summarise(
-    temp = mean(temp, na.rm = TRUE),
-    PSU = mean(PSU, na.rm = TRUE),
-    .groups = "drop"
-  )
+
+
 
 
 

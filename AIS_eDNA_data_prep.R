@@ -55,6 +55,63 @@ metadata <- read.csv(
   # Remove plate blanks / negative controls: keep only true samples
   filter(is.na(controlType))
 
+# ───────────────────────────────────────────────────────────────────────────────
+# 2b. Read SBE data and make daily means for Halifax only ----------------------
+# ───────────────────────────────────────────────────────────────────────────────
+
+new_data <- read_xlsx(
+  "./data/BIO_Stn24_SBE_CT_2023_2024_dateorderd.xlsx",
+  na = ""
+)
+
+new_data <- new_data %>% select(date, temp, PSU, ts) %>%
+  filter(ts >= as.Date("2023-04-27") & ts <= as.Date("2024-06-3"))
+
+new_data_clean <- new_data %>%
+  mutate(
+    date = as.Date(date)
+  )
+
+sbe_daily <- new_data_clean %>%
+  group_by(date) %>%
+  summarise(
+    temp = mean(temp, na.rm = TRUE),
+    PSU = mean(PSU, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+sbe_daily <- new_data %>%
+  mutate(date = as.Date(date)) %>%
+  group_by(date) %>%
+  summarise(
+    sbe_temp = mean(temp, na.rm = TRUE),
+    sbe_sal  = mean(PSU, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 2c. Replace HAL metadata temp/salinity with SBE daily values -----------------
+# ───────────────────────────────────────────────────────────────────────────────
+metadata <- metadata %>%
+  mutate(
+    waterTemp_C  = as.numeric(waterTemp_C),
+    salinity_ppt = as.numeric(salinity_ppt)
+  ) %>%
+  left_join(sbe_daily, by = "date") %>%
+  mutate(
+    waterTemp_C = dplyr::if_else(
+      region == "HAL" & !is.na(sbe_temp),
+      sbe_temp,
+      waterTemp_C
+    ),
+    salinity_ppt = dplyr::if_else(
+      region == "HAL" & !is.na(sbe_sal),
+      sbe_sal,
+      salinity_ppt
+    )
+  ) %>%
+  select(-sbe_temp, -sbe_sal)
+
 #CHANGE RIDICULOUS PH to NA
 metadata <- metadata %>%
   dplyr::mutate(
