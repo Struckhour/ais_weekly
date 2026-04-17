@@ -195,7 +195,7 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 
   df <- df %>%
     dplyr::arrange(month)
-  win <- calc_window_simple(df, threshold = 0.85)
+  win <- calc_window_simple(df, threshold = 0.8)
   # calculate optimized window
   # win <- calc_window_optimized(
   #   df,
@@ -754,8 +754,8 @@ calc_window_plateaus <- function(
 }
 
 
-selected_species <- "Membranipora membranacea"
-selected_region <- "PEI"
+selected_species <- "Botrylloides violaceus"
+selected_region <- "MAG"
 
 df_sub <- df %>%
   dplyr::filter(
@@ -768,9 +768,9 @@ plot_df <- df_sub %>%
   interp_monthly_circular() %>%
   classify_months(threshold = 0.75)
 
-window_res <- calc_window_simple(plot_df, threshold = 0.75)
+window_res <- calc_window_simple(plot_df, threshold = 0.85)
 
-
+test_window_wilcox(df, selected_species, selected_region, window_res)
 
 
 
@@ -921,6 +921,7 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
     #   edge_scale = "inside_high"
     # )
     if (is.null(window_res)) {
+      print("window is null")
       return(NULL)
     }
 
@@ -935,6 +936,7 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
     )
 
     if (is.null(wilcox_result)) {
+      print("wilcox is null")
       return(NULL)
     }
 
@@ -964,7 +966,7 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
 wilcox_results_df <- collect_window_wilcox_results(
   df_monthly = df,
   df_raw = dfRawClean,
-  threshold = 0.75
+  threshold = 0.8
 )
 
 
@@ -989,8 +991,7 @@ species_order <- c(
 plot_df <- wilcox_results_df %>%
   filter(
     !(
-      (species == "Didemnum vexillum" & region == "MAG") |
-       (species == "Ciona intestinalis" & region == "BOF")
+      (species == "Didemnum vexillum" & region == "MAG")
     )
   ) %>%
   mutate(

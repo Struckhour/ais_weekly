@@ -138,7 +138,7 @@ region_colors <- c(
 
 window_plot_df <- collect_window_plot_data(
   df_monthly = df,
-  threshold = 0.75
+  threshold = 0.8
 ) %>%
   dplyr::filter(
     !(species == "Didemnum vexillum" & region == "MAG")
