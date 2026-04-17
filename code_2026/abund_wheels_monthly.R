@@ -177,6 +177,140 @@ plot_monthly_wheel <- function(df, region, title = NULL) {
 }
 
 
+plot_monthly_wheel_window <- function(df, region, title = NULL) {
+
+  region_colors <- c(
+    MAG = "#00A08A",
+    PEI = "#446455",
+    HAL = "#CCAA4F",
+    BOF = "#5BBCD6",
+    GOM = "#fb8072"
+  )
+
+  if (!region %in% names(region_colors)) {
+    stop("Unknown region: ", region)
+  }
+
+  above_color <- region_colors[[region]]
+
+  df <- df %>%
+    dplyr::arrange(month)
+
+  # calculate optimized window
+  # win <- calc_window_optimized(
+  #   df,
+  #   value_col = "value",
+  #   optimize = "mean_diff",
+  #   min_width = 2,
+  #   max_width = 6,
+  #   must_include_peak = TRUE,
+  #   tie_break = "wider"
+  # )
+  win <- calc_window_plateaus(
+    plot_df,
+    min_width = 1,
+    max_width = 11,
+    width_weight = "none",
+    edge_scale = "inside_high"
+  )
+
+  # assign wedge status based on selected window
+  df <- df %>%
+    dplyr::mutate(
+      status = dplyr::case_when(
+        !win$wrap_around &
+          month >= win$start_month &
+          month <= win$end_month ~ "inside",
+        win$wrap_around &
+          (month >= win$start_month | month <= win$end_month) ~ "inside",
+        TRUE ~ "outside"
+      )
+    )
+
+  ggplot2::ggplot(df) +
+
+    # -------------------------
+  # RADIAL LINES (months)
+  # -------------------------
+  ggplot2::geom_vline(
+    xintercept = 1:12,
+    color = "black",
+    linewidth = 0.3,
+    alpha = 0.5
+  ) +
+
+    # -------------------------
+  # CIRCULAR GRID LINES
+  # -------------------------
+  ggplot2::geom_hline(
+    yintercept = c(0.25, 0.5, 0.75, 1),
+    color = "black",
+    linewidth = 0.3,
+    alpha = 0.5
+  ) +
+
+    # -------------------------
+  # BASE LAYER (all bars)
+  # -------------------------
+  ggplot2::geom_col(
+    ggplot2::aes(
+      x = month,
+      y = value,
+      fill = status
+    ),
+    width = 0.9
+  ) +
+
+    ggplot2::scale_fill_manual(
+      values = c(
+        inside = above_color,
+        outside = "grey70"
+      ),
+      labels = c(
+        inside = "Optimal window",
+        outside = "Outside window"
+      )
+    ) +
+
+    # -------------------------
+  # STRIPED OVERLAY (IMPUTED ONLY)
+  # -------------------------
+  ggpattern::geom_col_pattern(
+    data = dplyr::filter(df, is_imputed == TRUE),
+    ggplot2::aes(x = month, y = value),
+    width = 0.9,
+    fill = NA,
+    pattern = "stripe",
+    pattern_fill = "white",
+    pattern_color = "white",
+    pattern_density = 0.1,
+    pattern_spacing = 0.02
+  ) +
+
+    ggplot2::coord_polar(start = 0) +
+
+    ggplot2::scale_x_continuous(
+      limits = c(0.5, 12.5),
+      breaks = 1:12,
+      labels = month.abb
+    ) +
+
+    ggplot2::ylim(0, 1) +
+
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      axis.title = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      axis.text.x = ggplot2::element_text(size = 32),
+      legend.title = ggplot2::element_blank(),
+      legend.position = "none"
+    ) +
+
+    ggplot2::labs(title = title)
+}
+
+
 # df_sub <- df %>%
 #   dplyr::filter(
 #     species == "Membranipora membranacea",
@@ -244,7 +378,63 @@ for (sp in all_species) {
   }
 }
 
+##################################
+#save window wheels instead of threshold wheels
+##################################
 
+
+if (!dir.exists("abundance_plateau_wheels")) {
+  dir.create("abundance_plateau_wheels")
+}
+
+
+all_species <- unique(df$species)
+all_regions <- unique(df$region)
+
+for (sp in all_species) {
+  for (reg in all_regions) {
+
+    df_sub <- df %>%
+      dplyr::filter(
+        species == sp,
+        region == reg
+      )
+
+    # skip empty combos
+    if (nrow(df_sub) == 0) next
+
+    # build plot data
+    plot_df <- df_sub %>%
+      prep_monthly_signal() %>%
+      interp_monthly_circular() %>%
+      classify_months(threshold = 0.75)
+
+    # generate plot
+    p <- plot_monthly_wheel_window(
+      df = plot_df,
+      region = reg
+      # title = paste(sp, "-", reg)
+    )
+
+    # safe filename
+    file_name <- paste0(
+      "abundance_plateau_wheels/",
+      gsub(" ", "_", sp),
+      "__",
+      gsub(" ", "_", reg),
+      ".png"
+    )
+
+    # save
+    ggsave(
+      filename = file_name,
+      plot = p,
+      width = 6,
+      height = 6,
+      dpi = 300
+    )
+  }
+}
 
 
 ###################################
@@ -309,7 +499,272 @@ calc_window_simple <- function(plot_df, threshold = 0.75) {
 }
 
 
+calc_window_optimized <- function(
+    plot_df,
+    value_col = "value",
+    optimize = c("mean_diff", "prob_superiority"),
+    min_width = 1,
+    max_width = NULL,
+    must_include_peak = TRUE,
+    tie_break = c("wider", "narrower")
+) {
 
+  optimize <- match.arg(optimize)
+  tie_break <- match.arg(tie_break)
+
+  df <- plot_df %>%
+    dplyr::arrange(month)
+
+  x <- df[[value_col]]
+  n <- length(x)
+
+  if (is.null(max_width)) {
+    max_width <- n - 1
+  }
+
+  if (n < 2) {
+    stop("plot_df must contain at least 2 months.")
+  }
+
+  if (min_width < 1 || max_width >= n || min_width > max_width) {
+    stop("Need 1 <= min_width <= max_width < number of months.")
+  }
+
+  peak_month <- which.max(x)
+
+  # helper: circular sequence of indices
+  get_window_idx <- function(start, width, n) {
+    ((start - 1 + 0:(width - 1)) %% n) + 1
+  }
+
+  # helper: probability of superiority
+  calc_prob_superiority <- function(in_vals, out_vals) {
+    comps <- outer(in_vals, out_vals, FUN = "-")
+    mean((comps > 0) + 0.5 * (comps == 0))
+  }
+
+  candidates <- list()
+  k <- 1
+
+  for (width in min_width:max_width) {
+    for (start in 1:n) {
+
+      idx_in <- get_window_idx(start, width, n)
+      idx_out <- setdiff(seq_len(n), idx_in)
+
+      if (must_include_peak && !(peak_month %in% idx_in)) {
+        next
+      }
+
+      in_vals <- x[idx_in]
+      out_vals <- x[idx_out]
+
+      mean_in <- mean(in_vals, na.rm = TRUE)
+      mean_out <- mean(out_vals, na.rm = TRUE)
+      mean_diff <- mean_in - mean_out
+
+      prob_superiority <- calc_prob_superiority(in_vals, out_vals)
+      rank_biserial <- 2 * prob_superiority - 1
+
+      score <- switch(
+        optimize,
+        mean_diff = mean_diff,
+        prob_superiority = prob_superiority
+      )
+
+      end_month <- idx_in[length(idx_in)]
+
+      candidates[[k]] <- data.frame(
+        start_month = start,
+        end_month = end_month,
+        width = width,
+        wrap_around = start > end_month,
+        mean_in = mean_in,
+        mean_out = mean_out,
+        mean_diff = mean_diff,
+        prob_superiority = prob_superiority,
+        rank_biserial = rank_biserial,
+        score = score
+      )
+
+      k <- k + 1
+    }
+  }
+
+  candidate_table <- dplyr::bind_rows(candidates)
+
+  # sort candidates
+  candidate_table <- candidate_table %>%
+    dplyr::arrange(
+      dplyr::desc(score),
+      if (tie_break == "wider") dplyr::desc(width) else width,
+      start_month
+    )
+
+  best <- candidate_table[1, ]
+
+  list(
+    start_month = best$start_month,
+    end_month = best$end_month,
+    wrap_around = best$wrap_around,
+    peak_month = peak_month,
+    width = best$width,
+    mean_in = best$mean_in,
+    mean_out = best$mean_out,
+    mean_diff = best$mean_diff,
+    prob_superiority = best$prob_superiority,
+    rank_biserial = best$rank_biserial,
+    score = best$score,
+    optimize = optimize,
+    candidates = candidate_table
+  )
+}
+
+calc_window_plateaus <- function(
+    plot_df,
+    value_col = "value",
+    min_width = 2,
+    max_width = NULL,
+    must_include_peak = TRUE,
+    width_weight = c("none", "sqrt", "linear"),
+    tie_break = c("wider", "narrower"),
+    edge_scale = c("none", "inside_high", "inside_high_sq")
+) {
+
+  width_weight <- match.arg(width_weight)
+  tie_break <- match.arg(tie_break)
+  edge_scale <- match.arg(edge_scale)
+
+  df <- plot_df %>%
+    dplyr::arrange(month)
+
+  x <- df[[value_col]]
+  n <- length(x)
+
+  if (n < 2) {
+    stop("plot_df must contain at least 2 rows.")
+  }
+
+  if (is.null(max_width)) {
+    max_width <- n - 1
+  }
+
+  if (min_width < 1 || max_width >= n || min_width > max_width) {
+    stop("Need 1 <= min_width <= max_width < number of rows.")
+  }
+
+  if (any(!is.finite(x))) {
+    stop("All values in value_col must be finite.")
+  }
+
+  peak_month <- which.max(x)
+
+  get_window_idx <- function(start, width, n) {
+    ((start - 1 + 0:(width - 1)) %% n) + 1
+  }
+
+  prev_idx <- function(i, n) {
+    ((i - 2) %% n) + 1
+  }
+
+  next_idx <- function(i, n) {
+    (i %% n) + 1
+  }
+
+  width_multiplier <- function(width, method) {
+    switch(
+      method,
+      none = 1,
+      sqrt = sqrt(width),
+      linear = width
+    )
+  }
+
+  scale_edge <- function(drop, inside_val, method) {
+    raw_drop <- max(0, drop)
+
+    switch(
+      method,
+      none = raw_drop,
+      inside_high = raw_drop * inside_val,
+      inside_high_sq = raw_drop * inside_val^2
+    )
+  }
+
+  candidates <- list()
+  k <- 1
+
+  for (width in min_width:max_width) {
+    for (start in 1:n) {
+
+      idx_in <- get_window_idx(start, width, n)
+      end_month <- idx_in[length(idx_in)]
+
+      if (must_include_peak && !(peak_month %in% idx_in)) {
+        next
+      }
+
+      left_outside  <- prev_idx(start, n)
+      right_outside <- next_idx(end_month, n)
+
+      left_drop_raw  <- x[start] - x[left_outside]
+      right_drop_raw <- x[end_month] - x[right_outside]
+
+      left_drop  <- scale_edge(left_drop_raw,  x[start],     edge_scale)
+      right_drop <- scale_edge(right_drop_raw, x[end_month], edge_scale)
+
+      drop_sum <- left_drop + right_drop
+      score <- drop_sum * width_multiplier(width, width_weight)
+
+      candidates[[k]] <- data.frame(
+        start_month = start,
+        end_month = end_month,
+        wrap_around = start > end_month,
+        width = width,
+        peak_month = peak_month,
+        left_inside_value = x[start],
+        left_outside_month = left_outside,
+        left_outside_value = x[left_outside],
+        left_drop_raw = left_drop_raw,
+        left_drop = left_drop,
+        right_inside_value = x[end_month],
+        right_outside_month = right_outside,
+        right_outside_value = x[right_outside],
+        right_drop_raw = right_drop_raw,
+        right_drop = right_drop,
+        drop_sum = drop_sum,
+        score = score
+      )
+
+      k <- k + 1
+    }
+  }
+
+  candidate_table <- dplyr::bind_rows(candidates)
+
+  candidate_table <- candidate_table %>%
+    dplyr::arrange(
+      dplyr::desc(score),
+      dplyr::desc(drop_sum),
+      if (tie_break == "wider") dplyr::desc(width) else width,
+      start_month
+    )
+
+  best <- candidate_table[1, ]
+
+  list(
+    start_month = best$start_month,
+    end_month = best$end_month,
+    wrap_around = best$wrap_around,
+    width = best$width,
+    peak_month = best$peak_month,
+    left_drop = best$left_drop,
+    right_drop = best$right_drop,
+    drop_sum = best$drop_sum,
+    score = best$score,
+    candidates = candidate_table
+  )
+}
 
 
 selected_species <- "Membranipora membranacea"
@@ -462,8 +917,22 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
       interp_monthly_circular() %>%
       classify_months(threshold = threshold)
 
-    window_res <- calc_window_simple(plot_df, threshold = threshold)
-
+    # window_res <- calc_window_simple(plot_df, threshold = threshold)
+    # window_res <- calc_window_optimized(
+    #   plot_df,
+    #   optimize = "mean_diff",
+    #   min_width = 2,
+    #   max_width = 6,
+    #   must_include_peak = TRUE,
+    #   tie_break = "wider"
+    # )
+    window_res <- calc_window_plateaus(
+      plot_df,
+      min_width = 1,
+      max_width = 11,
+      width_weight = "none",
+      edge_scale = "inside_high"
+    )
     if (is.null(window_res)) {
       return(NULL)
     }
