@@ -85,23 +85,6 @@ prep_window_segments <- function(window_df) {
     dplyr::mutate(
       end_plot = ifelse(end_plot < start_plot, end_plot + 12, end_plot),
       peak_plot = ifelse(peak_plot < start_plot, peak_plot + 12, peak_plot)
-    ) %>%
-    dplyr::mutate(
-      start_plot = ifelse(
-        species == "Ciona intestinalis" & region == "BOF",
-        3,
-        start_plot
-      ),
-      end_plot = ifelse(
-        species == "Ciona intestinalis" & region == "BOF",
-        15,
-        end_plot
-      ),
-      peak_plot = ifelse(
-        species == "Ciona intestinalis" & region == "BOF",
-        shift_month_march(peak_month),
-        peak_plot
-      )
     )
 }
 
@@ -232,24 +215,28 @@ ggplot(window_plot_df2) +
 #FRIEDMAN
 ##################################
 
-
 circular_midpoint <- function(start, end, n = 12) {
   d <- ((end - start + n) %% n)
   ((start + d / 2 - 1) %% n) + 1
 }
 
+required_n_regions <- 5
 
 window_centers_df <- window_plot_df %>%
   dplyr::mutate(
     center_month = circular_midpoint(start_month, end_month)
   )
 
+# keep only species with full regional coverage
+window_centers_df_complete <- window_centers_df %>%
+  dplyr::group_by(species) %>%
+  dplyr::filter(dplyr::n_distinct(region) == required_n_regions) %>%
+  dplyr::ungroup()
 
-center_matrix <- window_centers_df %>%
+center_matrix <- window_centers_df_complete %>%
   dplyr::select(species, region, center_month) %>%
   tidyr::pivot_wider(names_from = region, values_from = center_month) %>%
   dplyr::arrange(species)
-
 
 center_matrix_complete <- center_matrix %>%
   tidyr::drop_na()
@@ -262,9 +249,7 @@ n <- nrow(center_matrix_complete)        # species
 W <- friedman_res$statistic / (n * (k - 1))
 W
 
-
-
-rank_df <- window_centers_df %>%
+rank_df <- window_centers_df_complete %>%
   dplyr::mutate(
     center_shifted = shift_month_march(center_month)
   ) %>%
@@ -284,20 +269,23 @@ region_rank_summary <- rank_df %>%
   dplyr::arrange(mean_rank)
 
 
-rank_df_complete <- rank_df %>%
-  group_by(species) %>%
-  filter(n() == 5) %>%   # or whatever full region count is
-  ungroup()
-
-
-region_complete_rank_summary <- rank_df_complete %>%
-  dplyr::group_by(region) %>%
-  dplyr::summarise(
-    mean_rank = mean(rank, na.rm = TRUE),
-    sd_rank = sd(rank, na.rm = TRUE),
-    .groups = "drop"
+library(gt)
+region_rank_summary %>%
+  gt() %>%
+  fmt_number(columns = c(mean_rank, sd_rank), decimals = 2) %>%
+  tab_header(
+    title = "Regional timing ranks"
   ) %>%
-  dplyr::arrange(mean_rank)
+  cols_align(align = "center", -region)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -568,6 +556,18 @@ species_overlap_table <- species_overlap_table %>%
   dplyr::arrange(species)
 
 
+species_overlap_table %>%
+  gt() %>%
+  fmt_number(columns = mean_overlap, decimals = 2) %>%
+  tab_header(title = "Overlap Between Windows - Across Regions & Within Species") %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  tab_options(
+    table.font.color = "black"
+  )
+
 #####################################
 #WINDOW LENGTHS
 #####################################
@@ -588,3 +588,5 @@ window_length_df <- window_plot_df %>%
       wrap_around = wrap_around
     )
   )
+
+
