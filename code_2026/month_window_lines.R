@@ -284,10 +284,20 @@ region_rank_summary <- rank_df %>%
   dplyr::arrange(mean_rank)
 
 
+rank_df_complete <- rank_df %>%
+  group_by(species) %>%
+  filter(n() == 5) %>%   # or whatever full region count is
+  ungroup()
 
 
-
-
+region_complete_rank_summary <- rank_df_complete %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_rank = mean(rank, na.rm = TRUE),
+    sd_rank = sd(rank, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(mean_rank)
 
 
 

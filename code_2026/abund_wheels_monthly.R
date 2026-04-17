@@ -195,7 +195,7 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 
   df <- df %>%
     dplyr::arrange(month)
-  win <- calc_window_simple(df, threshold = 0.75)
+  win <- calc_window_simple(df, threshold = 0.85)
   # calculate optimized window
   # win <- calc_window_optimized(
   #   df,
