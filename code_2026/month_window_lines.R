@@ -261,3 +261,320 @@ n <- nrow(center_matrix_complete)        # species
 
 W <- friedman_res$statistic / (n * (k - 1))
 W
+
+
+
+rank_df <- window_centers_df %>%
+  dplyr::mutate(
+    center_shifted = shift_month_march(center_month)
+  ) %>%
+  dplyr::group_by(species) %>%
+  dplyr::mutate(
+    rank = rank(center_shifted, ties.method = "average")
+  ) %>%
+  dplyr::ungroup()
+
+region_rank_summary <- rank_df %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_rank = mean(rank, na.rm = TRUE),
+    sd_rank = sd(rank, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(mean_rank)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################
+#JACCARD
+################################
+
+jaccard_region_consistency <- function(
+    window_df,
+    species_name,
+    weight_col = NULL
+) {
+
+  # subset to one species
+  df <- window_df %>%
+    dplyr::filter(species == species_name)
+
+  if (nrow(df) < 2) {
+    return("Not enough regions")
+  }
+
+  # convert window to binary
+  window_to_binary <- function(start_month, end_month, wrap_around, n = 12) {
+    out <- rep(0, n)
+
+    if (!wrap_around) {
+      out[start_month:end_month] <- 1
+    } else {
+      out[c(start_month:n, 1:end_month)] <- 1
+    }
+
+    out
+  }
+
+  # build binary matrix
+  region_windows <- df %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      bin = list(window_to_binary(start_month, end_month, wrap_around))
+    ) %>%
+    tidyr::unnest_wider(bin, names_sep = "_") %>%
+    dplyr::ungroup()
+
+  mat <- region_windows %>%
+    dplyr::select(dplyr::starts_with("bin_")) %>%
+    as.matrix()
+
+  rownames(mat) <- region_windows$region
+
+  # optional weights
+  if (!is.null(weight_col) && weight_col %in% names(region_windows)) {
+    weights <- region_windows[[weight_col]]
+  } else {
+    weights <- rep(1, nrow(mat))
+  }
+
+  # pairwise comparisons
+  pair_idx <- utils::combn(seq_len(nrow(mat)), 2, simplify = FALSE)
+
+  jacc_df <- purrr::map_dfr(pair_idx, function(idx) {
+
+    i <- idx[1]
+    j <- idx[2]
+
+    v1 <- mat[i, ]
+    v2 <- mat[j, ]
+
+    n_int <- sum(v1 == 1 & v2 == 1)
+
+    # same "union" logic as before
+    n_union <- max(sum(v1), sum(v2))
+
+    n_wt <- weights[i] + weights[j]
+
+    tibble::tibble(
+      region_pair = paste(rownames(mat)[i], rownames(mat)[j], sep = "_"),
+      n_int = n_int,
+      n_union = n_union,
+      J_index = ifelse(n_union == 0, NA_real_, n_int / n_union),
+      n_wt = n_wt,
+      J_wt = J_index * n_wt
+    )
+  })
+
+  jacc_wt_mean <- jacc_df %>%
+    dplyr::summarise(
+      wt_mean = sum(J_wt, na.rm = TRUE) / sum(n_wt) * 100
+    ) %>%
+    dplyr::mutate(
+      wt_text = dplyr::case_when(
+        dplyr::between(wt_mean, 0, 9.99) ~ "Very low",
+        dplyr::between(wt_mean, 10, 29.99) ~ "Low",
+        dplyr::between(wt_mean, 30, 69.99) ~ "Medium",
+        dplyr::between(wt_mean, 70, 89.99) ~ "High",
+        dplyr::between(wt_mean, 90, 100) ~ "Very high"
+      )
+    )
+
+  list(
+    summary = jacc_wt_mean,
+    pairwise = jacc_df,
+    region_windows = region_windows
+  )
+}
+
+###################################################################
+jaccard_true_region_consistency <- function(
+    window_df,
+    species_name,
+    weight_col = NULL
+) {
+
+  # subset to one species
+  df <- window_df %>%
+    dplyr::filter(species == species_name)
+
+  if (nrow(df) < 2) {
+    return("Not enough regions")
+  }
+
+  # convert window to binary
+  window_to_binary <- function(start_month, end_month, wrap_around, n = 12) {
+    out <- rep(0, n)
+
+    if (!wrap_around) {
+      out[start_month:end_month] <- 1
+    } else {
+      out[c(start_month:n, 1:end_month)] <- 1
+    }
+
+    out
+  }
+
+  # build binary matrix
+  region_windows <- df %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      bin = list(window_to_binary(start_month, end_month, wrap_around))
+    ) %>%
+    tidyr::unnest_wider(bin, names_sep = "_") %>%
+    dplyr::ungroup()
+
+  mat <- region_windows %>%
+    dplyr::select(dplyr::starts_with("bin_")) %>%
+    as.matrix()
+
+  rownames(mat) <- region_windows$region
+
+  # optional weights
+  if (!is.null(weight_col) && weight_col %in% names(region_windows)) {
+    weights <- region_windows[[weight_col]]
+  } else {
+    weights <- rep(1, nrow(mat))
+  }
+
+  # pairwise comparisons
+  pair_idx <- utils::combn(seq_len(nrow(mat)), 2, simplify = FALSE)
+
+  jacc_df <- purrr::map_dfr(pair_idx, function(idx) {
+
+    i <- idx[1]
+    j <- idx[2]
+
+    v1 <- mat[i, ]
+    v2 <- mat[j, ]
+
+    n_int <- sum(v1 == 1 & v2 == 1)
+
+    # true jaccard logic?
+    n_union <- min(sum(v1), sum(v2))
+
+    n_wt <- weights[i] + weights[j]
+
+    tibble::tibble(
+      region_pair = paste(rownames(mat)[i], rownames(mat)[j], sep = "_"),
+      n_int = n_int,
+      n_union = n_union,
+      J_index = ifelse(n_union == 0, NA_real_, n_int / n_union),
+      n_wt = n_wt,
+      J_wt = J_index * n_wt
+    )
+  })
+
+  jacc_wt_mean <- jacc_df %>%
+    dplyr::summarise(
+      wt_mean = sum(J_wt, na.rm = TRUE) / sum(n_wt) * 100
+    ) %>%
+    dplyr::mutate(
+      wt_text = dplyr::case_when(
+        dplyr::between(wt_mean, 0, 9.99) ~ "Very low",
+        dplyr::between(wt_mean, 10, 29.99) ~ "Low",
+        dplyr::between(wt_mean, 30, 69.99) ~ "Medium",
+        dplyr::between(wt_mean, 70, 89.99) ~ "High",
+        dplyr::between(wt_mean, 90, 100) ~ "Very high"
+      )
+    )
+
+  list(
+    summary = jacc_wt_mean,
+    pairwise = jacc_df,
+    region_windows = region_windows
+  )
+}
+
+
+
+res <- jaccard_true_region_consistency(
+  window_df = window_plot_df,
+  species_name = "Carcinus maenas"
+)
+
+res$summary
+res$pairwise
+
+
+compute_species_overlap <- function(window_df, sp) {
+
+  res <- tryCatch(
+    jaccard_true_region_consistency(
+      window_df = window_df,
+      species_name = sp
+    ),
+    error = function(e) NULL
+  )
+
+  if (is.null(res) || is.character(res)) {
+    return(tibble::tibble(
+      species = sp,
+      n_regions = NA,
+      mean_overlap = NA,
+      overlap_class = NA
+    ))
+  }
+
+  tibble::tibble(
+    species = sp,
+    n_regions = nrow(res$region_windows),
+    mean_overlap = res$summary$wt_mean,
+    overlap_class = res$summary$wt_text
+  )
+}
+
+
+species_overlap_table <- window_plot_df %>%
+  dplyr::distinct(species) %>%
+  dplyr::pull(species) %>%
+  purrr::map_dfr(~ compute_species_overlap(window_plot_df, .x))
+
+species_overlap_table <- species_overlap_table %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  ) %>%
+  dplyr::arrange(species)
+
+
+#####################################
+#WINDOW LENGTHS
+#####################################
+calc_window_length <- function(start_month, end_month, wrap_around, n = 12) {
+  dplyr::if_else(
+    !wrap_around,
+    end_month - start_month + 1,
+    (n - start_month + 1) + end_month
+  )
+}
+
+
+window_length_df <- window_plot_df %>%
+  dplyr::mutate(
+    window_length = calc_window_length(
+      start_month = start_month,
+      end_month = end_month,
+      wrap_around = wrap_around
+    )
+  )
