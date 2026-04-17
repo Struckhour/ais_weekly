@@ -195,7 +195,7 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 
   df <- df %>%
     dplyr::arrange(month)
-
+  win <- calc_window_simple(df, threshold = 0.75)
   # calculate optimized window
   # win <- calc_window_optimized(
   #   df,
@@ -206,13 +206,13 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
   #   must_include_peak = TRUE,
   #   tie_break = "wider"
   # )
-  win <- calc_window_plateaus(
-    plot_df,
-    min_width = 1,
-    max_width = 11,
-    width_weight = "none",
-    edge_scale = "inside_high"
-  )
+  # win <- calc_window_plateaus(
+  #   plot_df,
+  #   min_width = 1,
+  #   max_width = 11,
+  #   width_weight = "none",
+  #   edge_scale = "inside_high"
+  # )
 
   # assign wedge status based on selected window
   df <- df %>%
@@ -418,7 +418,7 @@ for (sp in all_species) {
 
     # safe filename
     file_name <- paste0(
-      "abundance_plateau_wheels/",
+      "abundance_window_wheels/",
       gsub(" ", "_", sp),
       "__",
       gsub(" ", "_", reg),
@@ -449,28 +449,18 @@ calc_window_simple <- function(plot_df, threshold = 0.75) {
     dplyr::mutate(above = value >= threshold)
 
   x <- df$above
-
-  peak_month <- which.max(df$value)
-
   n <- length(x)
 
-  expand_one_side <- function(start, step) {
-
-    i <- start
-    repeat {
-
-      next_i <- ((i - 1 + step) %% n) + 1
-
-      if (!x[next_i]) break
-      if (next_i == peak_month) break
-
-      i <- next_i
-
-      if (i == start) break
-    }
-
-    return(i)
+  # handle full-year window
+  if (all(x)) {
+    return(list(
+      start_month = 1,
+      end_month = 12,
+      wrap_around = FALSE
+    ))
   }
+
+  peak_month <- which.max(df$value)
 
   # expand right (+1 direction)
   right <- peak_month
@@ -488,13 +478,10 @@ calc_window_simple <- function(plot_df, threshold = 0.75) {
     left <- next_l
   }
 
-  start_month <- left
-  end_month <- right
-
   list(
-    start_month = start_month,
-    end_month = end_month,
-    wrap_around = start_month > end_month
+    start_month = left,
+    end_month = right,
+    wrap_around = left > right
   )
 }
 
@@ -917,7 +904,7 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
       interp_monthly_circular() %>%
       classify_months(threshold = threshold)
 
-    # window_res <- calc_window_simple(plot_df, threshold = threshold)
+    window_res <- calc_window_simple(plot_df, threshold = threshold)
     # window_res <- calc_window_optimized(
     #   plot_df,
     #   optimize = "mean_diff",
@@ -926,13 +913,13 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
     #   must_include_peak = TRUE,
     #   tie_break = "wider"
     # )
-    window_res <- calc_window_plateaus(
-      plot_df,
-      min_width = 1,
-      max_width = 11,
-      width_weight = "none",
-      edge_scale = "inside_high"
-    )
+    # window_res <- calc_window_plateaus(
+    #   plot_df,
+    #   min_width = 1,
+    #   max_width = 11,
+    #   width_weight = "none",
+    #   edge_scale = "inside_high"
+    # )
     if (is.null(window_res)) {
       return(NULL)
     }
@@ -1155,7 +1142,7 @@ expected <- expand.grid(
 
 expected$filename <- paste0(expected$species, "__", expected$region, ".png")
 
-files <- list.files("abundance_wheels", pattern = "\\.png$", full.names = TRUE)
+files <- list.files("abundance_window_wheels", pattern = "\\.png$", full.names = TRUE)
 file_map <- setNames(files, basename(files))
 
 expected$path <- file_map[expected$filename]
@@ -1195,7 +1182,7 @@ final <- image_append(image_join(rows), stack = TRUE)
 grid_with_labels <- image_append(c(left_col, final))
 final_labeled <- image_append(c(top_full, grid_with_labels), stack = TRUE)
 
-image_write(final_labeled, "saved_figures/combined_monthly_wheels.png")
+image_write(final_labeled, "saved_figures/combined_monthly_window_wheels.png")
 
 
 
