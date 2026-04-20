@@ -43,16 +43,22 @@ library(mgcv)           # generalized additive models
 # ───────────────────────────────────────────────────────────────────────────────
 metadata <- read.csv(
   "./data/AIS_weekly_metadata.csv",
-  check.names = FALSE,             # preserve original header formatting
-  na.strings  = ""                 # treat empty strings as NA
+  check.names = FALSE,
+  na.strings  = ""
 ) %>%
   mutate(
-    # Excel‑style serial date → Date
     date  = as.Date(eventDate, origin = "1899-12-30"),
     year  = year(date),
-    month = month(date)
+    month = month(date),
+
+    waterTemp_C = dplyr::if_else(
+      region == "PEI" &
+        date == as.Date("2023-11-30") &
+        trimws(waterTemp_C) == "27.5",
+      NA_character_,
+      waterTemp_C
+    )
   ) %>%
-  # Remove plate blanks / negative controls: keep only true samples
   filter(is.na(controlType))
 
 # ───────────────────────────────────────────────────────────────────────────────
