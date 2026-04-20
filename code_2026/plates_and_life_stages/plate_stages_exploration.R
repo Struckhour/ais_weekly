@@ -106,7 +106,7 @@ library(patchwork)
 # ----------------------------
 # Settings
 # ----------------------------
-target_species_vec <- c("Ciona intestinalis", "Botrylloides violaceus")
+target_species_vec <- c("Botrylloides violaceus", "Ciona intestinalis")
 target_region_vec  <- c("MAG", "PEI", "HAL", "BOF")
 
 state_levels <- c("R", "G", "B", "S", "D")
@@ -336,8 +336,8 @@ for (reg in target_region_vec) {
 # Top strip row
 # ----------------------------
 top_row <- wrap_plots(
-  make_species_strip("Ciona intestinalis"),
   make_species_strip("Botrylloides violaceus"),
+  make_species_strip("Ciona intestinalis"),
   plot_spacer(),
   ncol = 3,
   widths = c(1, 1, 0.08)
@@ -347,32 +347,32 @@ top_row <- wrap_plots(
 # Region rows
 # ----------------------------
 row_MAG <- wrap_plots(
-  panel_list[["MAG_Ciona intestinalis"]],
   panel_list[["MAG_Botrylloides violaceus"]],
+  panel_list[["MAG_Ciona intestinalis"]],
   make_region_strip("MAG"),
   ncol = 3,
   widths = c(1, 1, 0.08)
 )
 
 row_PEI <- wrap_plots(
-  panel_list[["PEI_Ciona intestinalis"]],
   panel_list[["PEI_Botrylloides violaceus"]],
+  panel_list[["PEI_Ciona intestinalis"]],
   make_region_strip("PEI"),
   ncol = 3,
   widths = c(1, 1, 0.08)
 )
 
 row_HAL <- wrap_plots(
-  panel_list[["HAL_Ciona intestinalis"]],
   panel_list[["HAL_Botrylloides violaceus"]],
+  panel_list[["HAL_Ciona intestinalis"]],
   make_region_strip("HAL"),
   ncol = 3,
   widths = c(1, 1, 0.08)
 )
 
 row_BOF <- wrap_plots(
-  panel_list[["BOF_Ciona intestinalis"]],
   panel_list[["BOF_Botrylloides violaceus"]],
+  panel_list[["BOF_Ciona intestinalis"]],
   make_region_strip("BOF"),
   ncol = 3,
   widths = c(1, 1, 0.08)
