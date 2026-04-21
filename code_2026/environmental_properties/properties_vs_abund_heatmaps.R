@@ -34,42 +34,39 @@ summary(model)
 #HEATMAP
 ################
 
-
 get_correlations <- function(df, property) {
 
   df %>%
     group_by(region, species) %>%
     summarise(
-
-      data_complete = list(
-        na.omit(data.frame(
-          x = .data[[property]],
-          logConc = logConc
-        ))
-      ),
-
-      n = nrow(data_complete[[1]]),
-
+      n = sum(!is.na(.data[[property]]) & !is.na(logConc)),
       r = if (n >= 3) {
-        cor(
-          data_complete[[1]]$x,
-          data_complete[[1]]$logConc
-        )
+        cor(.data[[property]], logConc, use = "complete.obs")
       } else {
         NA_real_
       },
-
       .groups = "drop"
     )
 }
 
-cor_df <- get_correlations(propdf, "temp")
-cor_df <- get_correlations(propdf, "pH")
-cor_df <- get_correlations(propdf, "turb")
-cor_df <- get_correlations(propdf, "sal")
-cor_df <- get_correlations(propdf, "tds")
-cor_df <- get_correlations(propdf, "chl")
-cor_df <- get_correlations(propdf, "tss")
+# cor_df <- get_correlations(propdf, "temp")
+# cor_df <- get_correlations(propdf, "pH")
+# cor_df <- get_correlations(propdf, "turb")
+# cor_df <- get_correlations(propdf, "sal")
+# cor_df <- get_correlations(propdf, "tds")
+# cor_df <- get_correlations(propdf, "chl")
+# cor_df <- get_correlations(propdf, "tss")
+cor_df <- get_correlations(propdf, "pH") %>%
+  group_by(region) %>%
+  filter(!all(is.na(r))) %>%   # remove regions with no usable data at all
+  ungroup() %>%
+  mutate(region = factor(region, levels = rev(region_order)))
+
+cor_df <- cor_df %>%
+  tidyr::complete(region, species)
+
+cor_df <- cor_df %>%
+  mutate(region = factor(region, levels = rev(region_order)))
 
 ggplot(cor_df, aes(x = species, y = region, fill = r)) +
   geom_tile(color = "grey80") +
@@ -79,6 +76,7 @@ ggplot(cor_df, aes(x = species, y = region, fill = r)) +
     high = "orange",
     midpoint = 0,
     limits = c(-1, 1),
+    na.value = "grey80",
     name = "Pearson r"
   ) +
   theme_minimal() +
