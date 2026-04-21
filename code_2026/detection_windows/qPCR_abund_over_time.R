@@ -5,6 +5,16 @@ library(dplyr)
 library(forcats)
 library(lubridate)
 
+species_order <- c(
+  "Membranipora membranacea",
+  "Botrylloides violaceus",
+  "Didemnum vexillum",
+  "Ciona intestinalis",
+  "Carcinus maenas"
+)
+
+
+
 color_vec <- c("#00A08A", "#446455", "#Fdd262", "#5BBCD6", "#046c9a", "#ABDDDE", "#d3dddc")
 
 other_color_vec <- c("#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3")
@@ -112,8 +122,8 @@ df_plot <- dfMonths %>%
                     normPosMeanLogConc = "Normalized Positive log concentration",
                     det_rate = "Detection rate"),
     month_label = substr(month.abb[month_reordered], 1, 1),
-    # Set factor levels for regions to control facet row order
-    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM"))
+    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM")),
+    species = factor(species, levels = species_order)
   )
 
 ggplot(df_plot, aes(x = month_reordered, y = value, group = metric, color = metric)) +
@@ -167,15 +177,13 @@ df_plot <- dfMonths %>%
                     normPosMeanLogConc  = "Normalized Positive log concentration",
                     det_rate            = "Detection rate"
     ),
-
-    # ✅ THIS IS THE KEY FIX
     month_plot_label = factor(
       month_original,
       levels = 1:12,
       labels = month.abb
     ),
-
-    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM"))
+    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM")),
+    species = factor(species, levels = species_order)
   )
 # Plot
 ggplot(df_plot, aes(x = month_plot_label, y = value, color = metric)) +

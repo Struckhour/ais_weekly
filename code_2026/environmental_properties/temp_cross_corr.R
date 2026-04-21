@@ -201,18 +201,25 @@ season_df <- full_join(
 
 # linear interpolation, leaving ends extended
 fill_circular_series <- function(x) {
+  n <- length(x)
   idx <- which(is.finite(x))
 
-  if (length(idx) == 0) return(rep(NA_real_, length(x)))
-  if (length(idx) == 1) return(rep(x[idx], length(x)))
+  if (length(idx) == 0) return(rep(NA_real_, n))
+  if (length(idx) == 1) return(rep(x[idx], n))
 
-  approx(
-    x = idx,
-    y = x[idx],
-    xout = seq_along(x),
+  # extend one full cycle on both sides
+  idx_ext <- c(idx - n, idx, idx + n)
+  y_ext   <- rep(x[idx], 3)
+
+  out <- approx(
+    x = idx_ext,
+    y = y_ext,
+    xout = seq_len(n),
     method = "linear",
     rule = 2
   )$y
+
+  out
 }
 
 # z-score helper
@@ -290,72 +297,7 @@ circular_results <- season_df %>%
 
 circular_results
 
-
-
-bound_circular_lag_profile <- function(temp, qpcr, max_lag = 12) {
-  n <- length(temp)
-
-  temp_filled <- fill_circular_series(temp)
-  qpcr_filled <- fill_circular_series(qpcr)
-
-  temp_z <- zscore(temp_filled)
-  qpcr_z <- zscore(qpcr_filled)
-
-  # bail out early if either series is unusable
-  if (all(is.na(temp_z)) || all(is.na(qpcr_z))) {
-    return(tibble(
-      lag = (-max_lag):(max_lag),
-      cor = NA_real_
-    ))
-  }
-
-  lags <- (-max_lag):(max_lag)
-
-  cors <- sapply(lags, function(k) {
-    shifted_temp <- circ_shift(temp_z, k)
-
-    keep <- is.finite(shifted_temp) & is.finite(qpcr_z)
-
-    if (sum(keep) < 3) {
-      return(NA_real_)
-    }
-
-    cor(shifted_temp[keep], qpcr_z[keep])
-  })
-
-  tibble(
-    lag = lags,
-    cor = cors
-  )
-}
-
-
-bound_circular_results <- season_df %>%
-  group_by(region, species) %>%
-  group_modify(~{
-    prof <- bound_circular_lag_profile(.x$temp, .x$qpcr)
-
-    if (nrow(prof) == 0 || all(is.na(prof$cor))) {
-      return(tibble(
-        best_lag = NA_real_,
-        max_cor = NA_real_
-      ))
-    }
-
-    best_i <- which.max(prof$cor)
-
-    tibble(
-      best_lag = prof$lag[best_i],
-      max_cor = prof$cor[best_i]
-    )
-  }) %>%
-  ungroup()
-
-
-
-library(dplyr)
 library(gt)
-
 # your preferred orders (adjust if needed)
 region_order <- c("MAG", "PEI", "HAL", "BOF")
 species_order <- c(
@@ -365,9 +307,6 @@ species_order <- c(
   "Ciona intestinalis",
   "Carcinus maenas"
 )
-
-
-
 
 circular_results %>%
   # remove NA rows
