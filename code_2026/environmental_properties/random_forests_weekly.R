@@ -75,7 +75,7 @@ run_rf_model <- function(df_sp_clean,
     ntree = ntree
   )
 
-  summary_vars <- setdiff(profile_vars, c("region", "week_of_year"))
+  summary_vars <- setdiff(profile_vars, c("region", "week_of_year", "week_sin", "week_cos"))
 
   profiles <- df_model %>%
     dplyr::group_by(region, week_of_year) %>%
@@ -90,7 +90,9 @@ run_rf_model <- function(df_sp_clean,
       dplyr::across(
         dplyr::all_of(summary_vars),
         ~ zoo::na.approx(.x, week_of_year, na.rm = FALSE, rule = 2)
-      )
+      ),
+      week_sin = sin(2 * pi * week_of_year / 52),
+      week_cos = cos(2 * pi * week_of_year / 52)
     ) %>%
     dplyr::ungroup()
 
@@ -143,6 +145,11 @@ for (sp in all_species) {
     required_vars = c("scaleLogConc", "week_of_year", "meanTemp", "meanSal", "meanPH", "meanLat")
   )
 
+  df_sp_clean <- df_sp_clean %>%
+    dplyr::mutate(
+      week_sin = sin(2 * pi * week_of_year / 52),
+      week_cos = cos(2 * pi * week_of_year / 52)
+    )
   df_sp_range <- df_sp_clean %>%
     group_by(region) %>%
     filter(sum(scaleLogConc > 0, na.rm = TRUE) >= 5) %>%
@@ -150,14 +157,14 @@ for (sp in all_species) {
 
   m1 <- run_rf_model(
     df_sp_clean = df_sp_range,
-    model_formula = scaleLogConc ~ week_of_year + meanLat,
-    profile_vars = c("week_of_year", "meanLat")
+    model_formula = scaleLogConc ~ week_sin + week_cos + meanLat,
+    profile_vars = c("week_of_year", "week_sin", "week_cos", "meanLat")
   )
 
   m2 <- run_rf_model(
     df_sp_clean = df_sp_range,
-    model_formula = scaleLogConc ~ week_of_year + meanTemp + meanSal + meanLat,
-    profile_vars = c("week_of_year", "meanTemp", "meanSal", "meanLat")
+    model_formula = scaleLogConc ~ week_sin + week_cos + meanTemp + meanSal + meanLat,
+    profile_vars = c("week_of_year", "week_sin", "week_cos", "meanTemp", "meanSal", "meanLat")
   )
 
   m3 <- run_rf_model(
