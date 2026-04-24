@@ -537,3 +537,256 @@ rpart.plot(
   fallen.leaves = TRUE,
   tweak = 1.1
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################
+#TIME LAGS
+###############################
+
+df_tree_lagged <- df_tree_model %>%
+  arrange(species, region, week_of_year) %>%
+  group_by(species, region) %>%
+  mutate(
+    y_lag0 = scaleLogConc,
+    y_lag1 = lead(scaleLogConc, 1),
+    y_lag2 = lead(scaleLogConc, 2),
+    y_lag3 = lead(scaleLogConc, 3)
+  ) %>%
+  ungroup()
+
+run_tree_models_for_response <- function(df, response_var) {
+
+  model_formulas <- list(
+    "1_plate"             = as.formula(paste(response_var, "~ mean_plate_abund")),
+    "2_plate_stage"       = as.formula(paste(response_var, "~ mean_plate_abund + R + G + B + S + D")),
+    "3_plate_stage_cycle" = as.formula(paste(response_var, "~ mean_plate_abund + R + G + B + S + D + week_sin + week_cos")),
+    "4_cycle_only"        = as.formula(paste(response_var, "~ week_sin + week_cos")),
+    "5_plate_cycle"       = as.formula(paste(response_var, "~ mean_plate_abund + week_sin + week_cos"))
+  )
+
+  species_list <- levels(df$species)
+
+  tree_models <- lapply(species_list, function(sp) {
+    df_sp <- df %>%
+      filter(
+        species == sp,
+        !is.na(.data[[response_var]]),
+        !is.na(mean_plate_abund)
+      )
+
+    fits <- lapply(model_formulas, function(fm) {
+      rpart(
+        formula = fm,
+        data = df_sp,
+        method = "anova",
+        model = TRUE,
+        control = rpart.control(
+          cp = 0.01,
+          minsplit = 10,
+          minbucket = 5,
+          maxdepth = 4
+        )
+      )
+    })
+
+    list(
+      species = sp,
+      data = df_sp,
+      fits = fits
+    )
+  })
+
+  names(tree_models) <- species_list
+
+  tree_results <- lapply(names(tree_models), function(sp) {
+    obj <- tree_models[[sp]]
+    df_sp <- obj$data
+
+    bind_rows(lapply(names(obj$fits), function(nm) {
+      fit <- obj$fits[[nm]]
+      pred <- predict(fit, newdata = df_sp)
+      obs  <- df_sp[[response_var]]
+
+      tibble(
+        species = sp,
+        model = nm,
+        rmse = sqrt(mean((obs - pred)^2, na.rm = TRUE)),
+        rsq = cor(obs, pred, use = "complete.obs")^2,
+        n = nrow(df_sp)
+      )
+    }))
+  }) %>%
+    bind_rows() %>%
+    arrange(species, rmse)
+
+  list(
+    models = tree_models,
+    results = tree_results
+  )
+}
+
+
+
+lag_runs <- list(
+  lag0 = run_tree_models_for_response(df_tree_lagged, "y_lag0"),
+  lag1 = run_tree_models_for_response(df_tree_lagged, "y_lag1"),
+  lag2 = run_tree_models_for_response(df_tree_lagged, "y_lag2"),
+  lag3 = run_tree_models_for_response(df_tree_lagged, "y_lag3")
+)
+
+
+lag_results_all <- bind_rows(
+  lag_runs$lag0$results %>% mutate(lag = "lag0"),
+  lag_runs$lag1$results %>% mutate(lag = "lag1"),
+  lag_runs$lag2$results %>% mutate(lag = "lag2"),
+  lag_runs$lag3$results %>% mutate(lag = "lag3")
+) %>%
+  mutate(
+    lag = factor(lag, levels = c("lag0", "lag1", "lag2", "lag3")),
+    model = recode(
+      model,
+      "1_plate" = "Plate",
+      "2_plate_stage" = "Plate + Stage",
+      "3_plate_stage_cycle" = "Plate + Stage + Time",
+      "4_cycle_only" = "Time",
+      "5_plate_cycle" = "Plate + Time"
+    )
+  ) %>%
+  arrange(species, lag, rmse)
+
+lag_results_all
+
+best_by_lag <- lag_results_all %>%
+  group_by(species, lag) %>%
+  slice_min(order_by = rmse, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+best_by_lag
+
+
+best_by_lag %>%
+  group_by(species) %>%
+  mutate(
+    species_display = ifelse(row_number() == 1, as.character(species), "")
+  ) %>%
+  ungroup() %>%
+  select(
+    species = species_display,
+    lag,
+    model,
+    rmse,
+    rsq,
+    n
+  ) %>%
+  gt() %>%
+  tab_header(
+    title = "Best Regression Tree Model by Time Lag",
+    subtitle = "Predictors at week t, response at week t + lag"
+  ) %>%
+  fmt_number(
+    columns = c(rmse, rsq),
+    decimals = 3
+  ) %>%
+  cols_label(
+    species = "Species",
+    lag = "Lag",
+    model = "Best model",
+    rmse = "RMSE",
+    rsq = "R²",
+    n = "N"
+  ) %>%
+  tab_options(
+    table.background.color = "white",
+    heading.background.color = "white",
+    column_labels.background.color = "white"
+  )
+
+
+lag_results_all %>%
+  group_by(species, lag) %>%
+  mutate(is_best = rmse == min(rmse)) %>%
+  ungroup() %>%
+  group_by(species) %>%
+  mutate(
+    species_display = ifelse(row_number() == 1, as.character(species), "")
+  ) %>%
+  ungroup() %>%
+  select(
+    species = species_display,
+    lag,
+    model,
+    rmse,
+    rsq,
+    is_best
+  ) %>%
+  gt() %>%
+  tab_header(
+    title = "Regression Tree Model Performance Across Time Lags",
+    subtitle = "Predictors at week t, response at week t + lag"
+  ) %>%
+  fmt_number(
+    columns = c(rmse, rsq),
+    decimals = 3
+  ) %>%
+  cols_label(
+    species = "Species",
+    lag = "Lag",
+    model = "Model",
+    rmse = "RMSE",
+    rsq = "R²"
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(
+      columns = model,
+      rows = is_best
+    )
+  ) %>%
+  cols_hide(is_best) %>%
+  tab_options(
+    table.background.color = "white",
+    heading.background.color = "white",
+    column_labels.background.color = "white"
+  )

@@ -300,6 +300,7 @@ dfMonths <- dfRawClean %>%
     nDet     = sum(detected, na.rm = TRUE),
     det_rate = if_else(nReps > 0, nDet / nReps, NA_real_),
     meanConc = mean(concentration, na.rm = TRUE),
+    meanPosConc = mean(concentration[concentration > 0], na.rm = TRUE),
     meanLogConc = mean(logConc, na.rm = TRUE),
     meanPosLogConc = mean(logConc[logConc > 0], na.rm = TRUE),
     month_original = first(month),
@@ -320,7 +321,19 @@ dfMonths <- dfRawClean %>%
       meanPosLogConc / max(meanPosLogConc, na.rm = TRUE)
     },
     normMeanLogConc = replace_na(normMeanLogConc, 0),
-    normPosMeanLogConc = replace_na(normPosMeanLogConc, 0)
+    normPosMeanLogConc = replace_na(normPosMeanLogConc, 0),
+    normMeanConc = if (all(is.na(meanConc))) {
+      NA_real_
+    } else {
+      meanConc / max(meanConc, na.rm = TRUE)
+    },
+    normPosMeanConc = if (all(is.na(meanPosConc))) {
+      NA_real_
+    } else {
+      meanPosConc / max(meanPosConc, na.rm = TRUE)
+    },
+    normMeanConc = replace_na(normMeanConc, 0),
+    normPosMeanConc = replace_na(normPosMeanConc, 0)
   ) %>%
   ungroup() %>%
   # Join rotated month order for plotting
