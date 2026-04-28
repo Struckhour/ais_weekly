@@ -38,18 +38,22 @@ collect_window_plot_data <- function(df_monthly, threshold = 0.75) {
       classify_months(threshold = threshold)
 
     window_res <- calc_window_simple(plot_df, threshold = threshold)
-    # window_res <- calc_window_plateaus(
-    #   plot_df,
-    #   min_width = 1,
-    #   max_width = 11,
-    #   width_weight = "none",
-    #   edge_scale = "inside_high"
-    # )
+
     if (is.null(window_res)) {
       return(NULL)
     }
 
     peak_month <- plot_df$month[which.max(plot_df$value)]
+
+    inside_months <- if (!window_res$wrap_around) {
+      window_res$start_month:window_res$end_month
+    } else {
+      c(window_res$start_month:12, 1:window_res$end_month)
+    }
+
+    above_outside_months <- plot_df %>%
+      dplyr::filter(value >= threshold, !month %in% inside_months) %>%
+      dplyr::pull(month)
 
     tibble::tibble(
       species = species,
@@ -57,7 +61,8 @@ collect_window_plot_data <- function(df_monthly, threshold = 0.75) {
       start_month = window_res$start_month,
       end_month = window_res$end_month,
       wrap_around = window_res$wrap_around,
-      peak_month = peak_month
+      peak_month = peak_month,
+      above_outside_months = list(above_outside_months)
     )
   })
 }
@@ -84,7 +89,11 @@ prep_window_segments <- function(window_df) {
     ) %>%
     dplyr::mutate(
       end_plot = ifelse(end_plot < start_plot, end_plot + 12, end_plot),
-      peak_plot = ifelse(peak_plot < start_plot, peak_plot + 12, peak_plot)
+      peak_plot = ifelse(peak_plot < start_plot, peak_plot + 12, peak_plot),
+
+      # expand windows to cover full month bins
+      start_plot = start_plot - 0.5,
+      end_plot   = end_plot + 0.5
     )
 }
 
@@ -121,7 +130,7 @@ region_colors <- c(
 
 window_plot_df <- collect_window_plot_data(
   df_monthly = df,
-  threshold = 0.8
+  threshold = 0.9
 ) %>%
   dplyr::filter(
     !(species == "Didemnum vexillum" & region == "MAG")
@@ -133,14 +142,37 @@ window_plot_df <- collect_window_plot_data(
 
 window_plot_df2 <- prep_window_segments(window_plot_df)
 
-x_min <- 3
-x_max <- 15
+x_min <- 2.5
+x_max <- 15.5
 
+
+above_outside_df <- window_plot_df %>%
+  tidyr::unnest_longer(above_outside_months, values_to = "month") %>%
+  dplyr::filter(!is.na(month)) %>%
+  dplyr::mutate(
+    month_plot = shift_month_march(month),
+    x_start = month_plot - 0.5,
+    x_end   = month_plot + 0.5,
+    species = factor(species, levels = species_order),
+    region = factor(region, levels = rev(region_order))
+  )
 ###################################
 # PLOT
 ###################################
 
 ggplot(window_plot_df2) +
+  geom_segment(
+    data = above_outside_df,
+    aes(
+      x = x_start,
+      xend = x_end,
+      y = region,
+      yend = region
+    ),
+    color = "grey75",
+    linewidth = 4,
+    lineend = "round"
+  ) +
   geom_segment(
     aes(
       x = start_plot,
@@ -164,10 +196,11 @@ ggplot(window_plot_df2) +
   scale_color_manual(values = region_colors) +
   scale_x_continuous(
     limits = c(x_min, x_max),
-    breaks = seq(x_min, x_max, by = 1),
+    breaks = seq(3, 15, by = 1),
     labels = shifted_month_labels,
     expand = expansion(mult = c(0.02, 0.02))
   ) +
+  scale_y_discrete(limits = rev(region_order)) +
   labs(
     x = "Month",
     y = NULL,

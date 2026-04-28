@@ -195,7 +195,7 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 
   df <- df %>%
     dplyr::arrange(month)
-  win <- calc_window_simple(df, threshold = 0.8)
+  win <- calc_window_simple(df, threshold = 0.9)
   # calculate optimized window
   # win <- calc_window_optimized(
   #   df,
@@ -218,11 +218,18 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
   df <- df %>%
     dplyr::mutate(
       status = dplyr::case_when(
+        # inside window (same as before)
         !win$wrap_around &
           month >= win$start_month &
           month <= win$end_month ~ "inside",
+
         win$wrap_around &
           (month >= win$start_month | month <= win$end_month) ~ "inside",
+
+        # NEW: outside but above threshold
+        value >= 0.9 ~ "above_threshold",
+
+        # everything else
         TRUE ~ "outside"
       )
     )
@@ -264,11 +271,13 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
     ggplot2::scale_fill_manual(
       values = c(
         inside = above_color,
-        outside = "grey70"
+        above_threshold = "grey40",   # darker grey
+        outside = "grey70"            # lighter grey
       ),
       labels = c(
         inside = "Optimal window",
-        outside = "Outside window"
+        above_threshold = "Above threshold (outside window)",
+        outside = "Below threshold"
       )
     ) +
 
@@ -325,8 +334,8 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 # plot_monthly_wheel(plot_df, "Membranipora membranacea – MAG")
 
 
-if (!dir.exists("abundance_wheels_90")) {
-  dir.create("abundance_wheels_90")
+if (!dir.exists("abundance_wheels_90_dark")) {
+  dir.create("abundance_wheels_90_dark")
 }
 
 
@@ -407,7 +416,7 @@ for (sp in all_species) {
     plot_df <- df_sub %>%
       prep_monthly_signal() %>%
       interp_monthly_circular() %>%
-      classify_months(threshold = 0.75)
+      classify_months(threshold = 0.90)
 
     # generate plot
     p <- plot_monthly_wheel_window(
@@ -418,7 +427,7 @@ for (sp in all_species) {
 
     # safe filename
     file_name <- paste0(
-      "abundance_window_wheels/",
+      "abundance_wheels_90_dark/",
       gsub(" ", "_", sp),
       "__",
       gsub(" ", "_", reg),
@@ -1143,7 +1152,7 @@ expected <- expand.grid(
 
 expected$filename <- paste0(expected$species, "__", expected$region, ".png")
 
-files <- list.files("abundance_window_wheels", pattern = "\\.png$", full.names = TRUE)
+files <- list.files("abundance_wheels_90_dark", pattern = "\\.png$", full.names = TRUE)
 file_map <- setNames(files, basename(files))
 
 expected$path <- file_map[expected$filename]
@@ -1183,7 +1192,7 @@ final <- image_append(image_join(rows), stack = TRUE)
 grid_with_labels <- image_append(c(left_col, final))
 final_labeled <- image_append(c(top_full, grid_with_labels), stack = TRUE)
 
-image_write(final_labeled, "saved_figures/combined_monthly_window_wheels.png")
+image_write(final_labeled, "saved_figures/combined_monthly_wheels_90_dark.png")
 
 
 
