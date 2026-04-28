@@ -622,4 +622,67 @@ window_length_df <- window_plot_df %>%
     )
   )
 
+####################################
+#WHICH REGIONS ARE SIMILAR ACROSS SPECIES
+####################################
 
+calc_window_months <- function(start_month, end_month, wrap_around) {
+  if (!wrap_around) {
+    start_month:end_month
+  } else {
+    c(start_month:12, 1:end_month)
+  }
+}
+
+region_pair_overlap_df <- window_plot_df %>%
+  dplyr::mutate(
+    window_months = purrr::pmap(
+      list(start_month, end_month, wrap_around),
+      calc_window_months
+    )
+  ) %>%
+  dplyr::select(species, region, window_months) %>%
+  dplyr::group_by(species) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    pairwise = purrr::map(data, function(dat) {
+      region_pairs <- combn(dat$region, 2, simplify = FALSE)
+
+      purrr::map_dfr(region_pairs, function(pair) {
+        m1 <- dat$window_months[[which(dat$region == pair[1])]]
+        m2 <- dat$window_months[[which(dat$region == pair[2])]]
+
+        tibble::tibble(
+          region_1 = pair[1],
+          region_2 = pair[2],
+          overlap = length(intersect(m1, m2)) / length(union(m1, m2))
+        )
+      })
+    })
+  ) %>%
+  dplyr::select(species, pairwise) %>%
+  tidyr::unnest(pairwise) %>%
+  dplyr::ungroup()
+
+
+region_similarity_table <- region_pair_overlap_df %>%
+  dplyr::group_by(region_1, region_2) %>%
+  dplyr::summarise(
+    n_species = dplyr::n(),
+    mean_overlap = mean(overlap, na.rm = TRUE),
+    sd_overlap = sd(overlap, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(dplyr::desc(mean_overlap))
+
+
+region_similarity_table %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c(mean_overlap, sd_overlap), decimals = 2) %>%
+  gt::tab_header(
+    title = "Similarity Between Regions Across Species"
+  ) %>%
+  gt::cols_align(
+    align = "center",
+    columns = everything()
+  )

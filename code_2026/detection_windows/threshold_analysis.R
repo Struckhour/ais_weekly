@@ -202,6 +202,17 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
       window_res = window_res
     )
 
+    inside_months <- if (!window_res$wrap_around) {
+      window_res$start_month:window_res$end_month
+    } else {
+      c(window_res$start_month:12, 1:window_res$end_month)
+    }
+
+    n_above_threshold_outside_window <- sum(
+      plot_df$value >= threshold & !plot_df$month %in% inside_months,
+      na.rm = TRUE
+    )
+
     if (is.null(wilcox_result)) {
       print(paste0("wilcox is null at ", threshold, " for ", species, " in ", region))
       return(NULL)
@@ -220,7 +231,8 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
         region = region,
         start_month = window_res$start_month,
         end_month = window_res$end_month,
-        wrap_around = window_res$wrap_around
+        wrap_around = window_res$wrap_around,
+        n_above_threshold_outside_window = n_above_threshold_outside_window
       ),
       summary_wide,
       tibble::as_tibble(wilcox_result$test)
@@ -578,7 +590,7 @@ ggplot(threshold_avg_from_values_df,
 
 
 threshold_values_df <- purrr::map_dfr(
-  seq(0.70, 0.99, by = 0.01),
+  seq(0.50, 0.99, by = 0.01),
   function(thresh) {
 
     wilcox_results_df <- collect_window_wilcox_results(
@@ -604,11 +616,11 @@ threshold_values_df <- purrr::map_dfr(
         start_month,
         end_month,
         wrap_around,
-        window_duration
+        window_duration,
+        n_above_threshold_outside_window
       )
   }
 )
-
 
 threshold_avg_from_values_df <- threshold_values_df %>%
   dplyr::group_by(threshold) %>%
@@ -620,6 +632,8 @@ threshold_avg_from_values_df <- threshold_values_df %>%
     mean_window_duration = mean(window_duration, na.rm = TRUE),
     sd_window_duration   = sd(window_duration, na.rm = TRUE),
 
+    mean_above_outside = mean(n_above_threshold_outside_window, na.rm = TRUE),
+
     .groups = "drop"
   ) %>%
   dplyr::mutate(
@@ -629,7 +643,9 @@ threshold_avg_from_values_df <- threshold_values_df %>%
     prop_valid = n_valid / total_valid_combos,
 
     dur_ymin = (mean_window_duration - sd_window_duration) / 12,
-    dur_ymax = (mean_window_duration + sd_window_duration) / 12
+    dur_ymax = (mean_window_duration + sd_window_duration) / 12,
+
+    above_outside_scaled = mean_above_outside / 12
   )
 
 ggplot(threshold_avg_from_values_df, aes(x = threshold)) +
@@ -656,6 +672,24 @@ ggplot(threshold_avg_from_values_df, aes(x = threshold)) +
       y = mean_prob_superiority,
       color = "Prob. superiority (mean)"
     ),
+    size = 2
+  ) +
+
+  # --- above-threshold outside window ---
+  geom_line(
+    aes(
+      y = above_outside_scaled,
+      color = "Above-threshold outside window"
+    ),
+    linetype = "dotdash",
+    linewidth = 1
+  ) +
+  geom_point(
+    aes(
+      y = above_outside_scaled,
+      color = "Above-threshold outside window"
+    ),
+    shape = 4,
     size = 2
   ) +
 
@@ -708,7 +742,8 @@ ggplot(threshold_avg_from_values_df, aes(x = threshold)) +
     values = c(
       "Prob. superiority (mean)" = "black",
       "Proportion valid" = "red",
-      "Window duration (mean)" = "blue"
+      "Window duration (mean)" = "blue",
+      "Above-threshold outside window" = "purple"
     ),
     name = "Lines"
   ) +
@@ -722,13 +757,13 @@ ggplot(threshold_avg_from_values_df, aes(x = threshold)) +
   ) +
 
   scale_x_continuous(
-    breaks = seq(0.70, 0.99, by = 0.05),
+    breaks = seq(0.50, 0.99, by = 0.05),
     labels = scales::percent_format(accuracy = 1)
   ) +
 
   scale_y_continuous(
     name = "Probability / proportion",
-    sec.axis = sec_axis(~ . * 12, name = "Window duration (months)")
+    sec.axis = sec_axis(~ . * 12, name = "Months")
   ) +
 
   theme_classic() +
@@ -777,7 +812,7 @@ ggplot(threshold_avg_from_values_df, aes(x = threshold)) +
 
 
 threshold_values_df <- purrr::map_dfr(
-  seq(0.70, 0.99, by = 0.01),
+  seq(0.50, 0.99, by = 0.01),
   function(thresh) {
 
     wilcox_results_df <- collect_window_wilcox_results(
@@ -856,3 +891,31 @@ ggplot(threshold_pval_df, aes(x = threshold, y = prop_significant)) +
     x = "Window threshold",
     y = "Proportion p < 0.05"
   )
+
+
+
+
+library(lme4)
+
+threshold_model_values_df <- threshold_values_df %>%
+  filter(threshold >= 0.5) %>%
+  dplyr::mutate(
+    combo = interaction(species, region)
+  )
+
+model <- lmer(
+  prob_superiority ~ threshold + (1 | combo),
+  data = threshold_model_values_df
+)
+
+summary(model)
+
+library(lmerTest)
+
+model <- lmer(
+  prob_superiority ~ threshold + (1 | combo),
+  data = threshold_model_values_df
+)
+
+summary(model)
+
