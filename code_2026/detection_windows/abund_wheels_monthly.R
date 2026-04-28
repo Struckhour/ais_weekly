@@ -325,8 +325,8 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 # plot_monthly_wheel(plot_df, "Membranipora membranacea – MAG")
 
 
-if (!dir.exists("abundance_wheels")) {
-  dir.create("abundance_wheels")
+if (!dir.exists("abundance_wheels_90")) {
+  dir.create("abundance_wheels_90")
 }
 
 
