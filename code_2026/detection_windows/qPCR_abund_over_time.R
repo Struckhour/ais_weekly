@@ -28,147 +28,58 @@ hybrid_color <- c(
 )
 
 
-fixed_color <- c(
-  MAG = "#00A08A",
-  PEI = "#446455",
-  HAL = "#446455",
-  BOF = "#5BBCD6",
-  GOM = "#fb8072"
-)
 
-region_to_plot <- "HAL"   # change this to MAG, PEI, HAL, BOF, or GOM
 
-dfRaw_window <- dfRawClean %>%
-  filter(
-    region == region_to_plot,
-    date >= as.Date("2023-07-01"),
-    date <= as.Date("2023-09-30")
-  ) %>%
-  mutate(
-    species = factor(species, levels = species_order),
-    month_letter = substr(month.abb[month(date)], 1, 1)
-  )
-
-ggplot(dfRaw_window, aes(x = date, y = concentration + 1)) +
-  geom_point(size = 1, alpha = 0.5, color = fixed_color[[region_to_plot]]) +
-  geom_smooth(method = "loess", se = TRUE, color = "black") +
-  scale_y_log10() +
-  facet_grid(. ~ species) +
-  scale_x_date(
-    date_breaks = "1 month",
-    labels = function(d) substr(month.abb[month(d)], 1, 1)
-  ) +
-  theme_classic() +
-  labs(
-    title = paste("eDNA Concentration Over Time in", region_to_plot),
-    x = "Month",
-    y = "Log10(Concentration + 1)"
-  ) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 0, vjust = 0.5)
-  )
-
-region_to_plot <- "HAL"
-
+################
+#ALL REGIONS zoomed in on Halifax rainfall event
+################
 df_weekly <- dfRawClean %>%
   filter(
-    region == region_to_plot,
+    species != "Didemnum vexillum",
     date >= as.Date("2023-07-01"),
     date <= as.Date("2023-09-30")
   ) %>%
   mutate(
     species = factor(species, levels = species_order),
-    week = lubridate::floor_date(date, "week")
+    week = lubridate::floor_date(date, "week"),
+    alpha_flag = ifelse(region == "HAL", "HAL", "other")
   ) %>%
-  group_by(species, week) %>%
+  group_by(region, species, week, alpha_flag) %>%
   summarise(
     mean_conc = mean(concentration, na.rm = TRUE),
     .groups = "drop"
   )
 
-ggplot(df_weekly, aes(x = week, y = mean_conc + 1)) +
-  geom_point(size = 2, color = fixed_color[[region_to_plot]]) +
-  geom_line(color = fixed_color[[region_to_plot]]) +
+ggplot(df_weekly, aes(x = week, y = mean_conc + 1,
+                      color = region, group = region, alpha = alpha_flag)) +
+  geom_point(size = 2) +
+  geom_line() +
 
-  geom_vline(
-    xintercept = as.Date("2023-07-20"),
-    color = "red",
-    linetype = "dotted",
-    linewidth = 0.8
-  ) +
+  scale_alpha_manual(values = c(HAL = 1, other = 0.3)) +
+  scale_color_manual(values = hybrid_color) +
 
   scale_y_log10() +
   facet_grid(. ~ species) +
+
   scale_x_date(
     date_breaks = "1 month",
     labels = function(d) substr(month.abb[lubridate::month(d)], 1, 1)
   ) +
+
   theme_classic() +
   labs(
-    title = paste("Weekly Mean eDNA Concentration in", region_to_plot),
+    title = "Weekly Mean eDNA Concentration by Region",
     x = "Month",
-    y = "Log10(Mean Concentration + 1)"
+    y = "Log10(Mean Concentration + 1)",
+    color = "Region"
   ) +
+
   theme(
-    legend.position = "none",
+    legend.position = "top",
     axis.text.x = element_text(angle = 0, vjust = 0.5),
     panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
     panel.spacing = unit(0, "lines")
   )
-
-
-
-region_to_plot <- "BOF"
-
-df_weekly <- dfRawClean %>%
-  filter(
-    region == region_to_plot,
-    date >= as.Date("2023-07-01"),
-    date <= as.Date("2023-09-30")
-  ) %>%
-  mutate(
-    species = factor(species, levels = species_order),
-    week = lubridate::floor_date(date, "week")
-  ) %>%
-  group_by(species, week) %>%
-  summarise(
-    mean_conc = mean(concentration, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-ggplot(df_weekly, aes(x = week, y = mean_conc + 1)) +
-  geom_point(size = 2, color = fixed_color[[region_to_plot]]) +
-  geom_line(color = fixed_color[[region_to_plot]]) +
-
-  geom_vline(
-    xintercept = as.Date("2023-07-20"),
-    color = "red",
-    linetype = "dotted",
-    linewidth = 0.8
-  ) +
-
-  scale_y_log10() +
-  facet_grid(. ~ species) +
-  scale_x_date(
-    date_breaks = "1 month",
-    labels = function(d) substr(month.abb[lubridate::month(d)], 1, 1)
-  ) +
-  theme_classic() +
-  labs(
-    title = paste("Weekly Mean eDNA Concentration in", region_to_plot),
-    x = "Month",
-    y = "Log10(Mean Concentration + 1)"
-  ) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 0, vjust = 0.5),
-    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
-    panel.spacing = unit(0, "lines")
-  )
-
-
-
 
 
 
