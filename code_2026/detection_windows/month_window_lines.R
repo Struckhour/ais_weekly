@@ -316,13 +316,56 @@ region_rank_summary %>%
 
 
 
+######################
+#HOW CLUSTERED ARE THE WINDOWS?
+######################
 
+library(circular)
+compute_species_clustering <- function(df, sp) {
 
+  dat <- df %>%
+    dplyr::filter(species == sp)
 
+  if (nrow(dat) < 2) {
+    return(tibble::tibble(
+      species = sp,
+      clustering_R = NA_real_
+    ))
+  }
 
+  theta <- 2 * pi * dat$center_month / 12
 
+  R <- circular::rho.circular(circular::circular(theta))
 
+  tibble::tibble(
+    species = sp,
+    clustering_R = R
+  )
+}
 
+circular_midpoint <- function(start, end, n = 12) {
+  d <- ((end - start + n) %% n)
+  ((start + d / 2 - 1) %% n) + 1
+}
+
+window_plot_df_with_centers <- window_plot_df %>%
+  dplyr::mutate(
+    center_month = circular_midpoint(start_month, end_month)
+  )
+
+species_clustering_table <- window_plot_df_with_centers %>%
+  dplyr::distinct(species) %>%
+  dplyr::pull(species) %>%
+  purrr::map_dfr(~ compute_species_clustering(window_plot_df_with_centers, .x)) %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  ) %>%
+  dplyr::arrange(species)
+
+species_clustering_table %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = clustering_R, decimals = 2) %>%
+  gt::tab_header(title = "Clustering of Window Centers Across Regions")
 
 
 
@@ -686,3 +729,255 @@ region_similarity_table %>%
     align = "center",
     columns = everything()
   )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+calc_window_months <- function(start_month, end_month, wrap_around) {
+  if (!wrap_around) {
+    start_month:end_month
+  } else {
+    c(start_month:12, 1:end_month)
+  }
+}
+
+region_pair_overlap_df <- window_plot_df %>%
+  dplyr::mutate(
+    window_months = purrr::pmap(
+      list(start_month, end_month, wrap_around),
+      calc_window_months
+    )
+  ) %>%
+  dplyr::select(species, region, window_months) %>%
+  dplyr::group_by(species) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    pairwise = purrr::map(data, function(dat) {
+      region_pairs <- combn(dat$region, 2, simplify = FALSE)
+
+      purrr::map_dfr(region_pairs, function(pair) {
+        m1 <- dat$window_months[[which(dat$region == pair[1])]]
+        m2 <- dat$window_months[[which(dat$region == pair[2])]]
+
+        tibble::tibble(
+          region_1 = pair[1],
+          region_2 = pair[2],
+          overlap = length(intersect(m1, m2)) / min(length(m1), length(m2))
+        )
+      })
+    })
+  ) %>%
+  dplyr::select(species, pairwise) %>%
+  tidyr::unnest(pairwise) %>%
+  dplyr::ungroup()
+
+
+region_similarity_table <- region_pair_overlap_df %>%
+  dplyr::group_by(region_1, region_2) %>%
+  dplyr::summarise(
+    n_species = dplyr::n(),
+    mean_overlap = mean(overlap, na.rm = TRUE),
+    sd_overlap = sd(overlap, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(dplyr::desc(mean_overlap))
+
+
+region_similarity_table %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = c(mean_overlap, sd_overlap), decimals = 2) %>%
+  gt::tab_header(
+    title = "Similarity Between Regions Across Species"
+  ) %>%
+  gt::cols_align(
+    align = "center",
+    columns = everything()
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################
+#Jaccard Apr 29
+####################
+
+window_months <- function(start_month, end_month, wrap_around) {
+  if (!wrap_around) {
+    start_month:end_month
+  } else {
+    c(start_month:12, 1:end_month)
+  }
+}
+
+jaccard_overlap <- function(a, b) {
+  length(intersect(a, b)) / length(union(a, b))
+}
+
+compute_species_overlap_jaccard <- function(window_df, sp) {
+
+  dat <- window_df %>%
+    dplyr::filter(species == sp) %>%
+    dplyr::mutate(
+      months = purrr::pmap(
+        list(start_month, end_month, wrap_around),
+        window_months
+      )
+    )
+
+  if (nrow(dat) < 2) {
+    return(tibble::tibble(
+      species = sp,
+      n_regions = nrow(dat),
+      mean_overlap = NA_real_,
+      overlap_class = NA_character_
+    ))
+  }
+
+  pairs <- combn(seq_len(nrow(dat)), 2, simplify = FALSE)
+
+  pairwise <- purrr::map_dfr(pairs, function(idx) {
+    tibble::tibble(
+      region_1 = as.character(dat$region[idx[1]]),
+      region_2 = as.character(dat$region[idx[2]]),
+      jaccard = jaccard_overlap(
+        dat$months[[idx[1]]],
+        dat$months[[idx[2]]]
+      )
+    )
+  })
+
+  tibble::tibble(
+    species = sp,
+    n_regions = nrow(dat),
+    mean_overlap = mean(pairwise$jaccard, na.rm = TRUE),
+    overlap_class = dplyr::case_when(
+      mean_overlap >= 0.75 ~ "High",
+      mean_overlap >= 0.50 ~ "Moderate",
+      mean_overlap >= 0.25 ~ "Low",
+      TRUE ~ "Very low"
+    )
+  )
+}
+
+
+species_overlap_table <- window_plot_df %>%
+  dplyr::distinct(species) %>%
+  dplyr::pull(species) %>%
+  purrr::map_dfr(~ compute_species_overlap_jaccard(window_plot_df, .x)) %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  ) %>%
+  dplyr::arrange(species)
+
+species_overlap_table %>%
+  gt::gt() %>%
+  gt::fmt_number(columns = mean_overlap, decimals = 2) %>%
+  gt::tab_header(title = "Jaccard Overlap Between Windows - Across Regions & Within Species") %>%
+  gt::cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  gt::tab_options(
+    table.font.color = "black"
+  )
+
+
+
+##########################
+#JACCARD ALL MONTHS ABOVE THRESHOLD
+##########################
+
+collect_above_threshold_months <- function(df_monthly, threshold = 0.9) {
+
+  df_monthly %>%
+    dplyr::group_by(species, region) %>%
+    dplyr::group_modify(~ {
+      plot_df <- .x %>%
+        prep_monthly_signal() %>%
+        interp_monthly_circular() %>%
+        classify_months(threshold = threshold)
+
+      tibble::tibble(
+        months = list(plot_df$month[plot_df$value >= threshold])
+      )
+    }) %>%
+    dplyr::ungroup()
+}
+
+above_threshold_months_df <- collect_above_threshold_months(
+  df_monthly = dfMonths,
+  threshold = 0.9
+)
+
+compute_species_above_threshold_jaccard <- function(month_df, sp) {
+
+  dat <- month_df %>%
+    dplyr::filter(species == sp)
+
+  if (nrow(dat) < 2) {
+    return(tibble::tibble(
+      species = sp,
+      n_regions = nrow(dat),
+      mean_overlap = NA_real_
+    ))
+  }
+
+  pairs <- combn(seq_len(nrow(dat)), 2, simplify = FALSE)
+
+  pairwise <- purrr::map_dfr(pairs, function(idx) {
+    tibble::tibble(
+      region_1 = as.character(dat$region[idx[1]]),
+      region_2 = as.character(dat$region[idx[2]]),
+      jaccard = jaccard_overlap(
+        dat$months[[idx[1]]],
+        dat$months[[idx[2]]]
+      )
+    )
+  })
+
+  tibble::tibble(
+    species = sp,
+    n_regions = nrow(dat),
+    mean_overlap = mean(pairwise$jaccard, na.rm = TRUE)
+  )
+}
+
+
+species_above_threshold_overlap_table <- above_threshold_months_df %>%
+  dplyr::distinct(species) %>%
+  dplyr::pull(species) %>%
+  purrr::map_dfr(~ compute_species_above_threshold_jaccard(
+    above_threshold_months_df, .x
+  )) %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  ) %>%
+  dplyr::arrange(species)
