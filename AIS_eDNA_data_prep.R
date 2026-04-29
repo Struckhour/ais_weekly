@@ -42,7 +42,7 @@ library(mgcv)           # generalized additive models
 # 2. Read metadata (sample‑level environmental data + coordinates) -------------
 # ───────────────────────────────────────────────────────────────────────────────
 metadata <- read.csv(
-  "./data/AIS_weekly_metadata.csv",
+  "./data/AIS_weekly_metadata_BOF_adjusted.csv",
   check.names = FALSE,
   na.strings  = ""
 ) %>%
@@ -233,7 +233,8 @@ dfRawClean <- dfRaw %>%
     by = c("region", "date", "species")
   ) %>%
   dplyr::filter(
-    !(species == "Didemnum vexillum" & !region %in% c("BOF", "GOM"))
+    !(species == "Didemnum vexillum" & !region %in% c("BOF", "GOM")),
+    station != "Causeway"
   )
 
 # ───────────────────────────────────────────────────────────────────────────────

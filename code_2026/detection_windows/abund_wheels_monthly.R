@@ -972,10 +972,40 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
   results
 }
 
+dfRawClean_sample_mean <- dfRawClean %>%
+  dplyr::group_by(
+    materialSampleID,
+    region,
+    species,
+    date,
+    month
+  ) %>%
+  dplyr::summarise(
+    concentration = mean(concentration, na.rm = TRUE),
+    logConc = log(mean(concentration, na.rm = TRUE) + 1),
+    detected = as.integer(concentration > 0),
+    .groups = "drop"
+  )
+
+dfRawClean_date_mean <- dfRawClean %>%
+  dplyr::group_by(
+    region,
+    species,
+    date,
+    month
+  ) %>%
+  dplyr::summarise(
+    concentration = mean(concentration, na.rm = TRUE),
+    logConc = log(mean(concentration, na.rm = TRUE) + 1),
+    detected = as.integer(concentration > 0),
+    .groups = "drop"
+  )
+
+
 wilcox_results_df <- collect_window_wilcox_results(
   df_monthly = df,
   df_raw = dfRawClean,
-  threshold = 0.8
+  threshold = 0.9
 )
 
 
@@ -1009,14 +1039,27 @@ plot_df <- wilcox_results_df %>%
   ) %>%
   arrange(species, region)
 
-ggplot(plot_df, aes(x = prob_superiority, y = region, fill = region)) +
-  geom_col(width = 0.8) +
+ggplot(plot_df, aes(y = region, fill = region)) +
+  geom_rect(
+    aes(
+      xmin = 0.5,
+      xmax = prob_superiority,
+      ymin = as.numeric(region) - 0.4,
+      ymax = as.numeric(region) + 0.4
+    )
+  ) +
   geom_vline(xintercept = 0.5, linetype = "dashed") +
-  geom_vline(xintercept = 0.25, linetype = "dashed") +
-  geom_vline(xintercept = 0.75, linetype = "dashed") +
+  geom_vline(xintercept = 0.6, linetype = "dashed") +
+  geom_vline(xintercept = 0.7, linetype = "dashed") +
+  geom_vline(xintercept = 0.8, linetype = "dashed") +
+  geom_vline(xintercept = 0.9, linetype = "dashed") +
   geom_vline(xintercept = 1.0, linetype = "dashed") +
   scale_fill_manual(values = region_colors) +
-  scale_x_continuous(limits = c(0, 1)) +
+  scale_x_continuous(
+    limits = c(0.5, 1),
+    breaks = seq(0.5, 1, by = 0.1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
   facet_grid(species ~ ., scales = "free_y", space = "free_y", switch = "y") +
   labs(
     x = "Probability of superiority",
@@ -1029,33 +1072,70 @@ ggplot(plot_df, aes(x = prob_superiority, y = region, fill = region)) +
     panel.grid.major.y = element_blank(),
     panel.grid.minor = element_blank(),
     strip.placement = "outside",
-    strip.text.y.left = element_text(
-      angle = 0,
-      face = "italic",
-      hjust = 1
-    ),
+    strip.text.y.left = element_text(angle = 0, face = "italic", hjust = 1),
     panel.spacing.y = unit(0.6, "lines")
   )
 
 
+#########
+#TEST ON P OF S BY REGION
+#########
+
+df_test <- wilcox_results_df %>%
+  dplyr::filter(!is.na(prob_superiority)) %>%
+  dplyr::filter(species != "Didemnum vexillum")  # optional (incomplete regions)
+
+wide <- df_test %>%
+  dplyr::select(species, region, prob_superiority) %>%
+  tidyr::pivot_wider(names_from = region, values_from = prob_superiority) %>%
+  tidyr::drop_na()
+
+friedman.test(as.matrix(wide[, -1]))
 
 
+k <- ncol(wide[, -1])
+n <- nrow(wide)
+
+W <- friedman.test(as.matrix(wide[, -1]))$statistic / (n * (k - 1))
+W
+
+pairwise.wilcox.test(
+  x = df_test$prob_superiority,
+  g = df_test$region,
+  paired = TRUE,
+  p.adjust.method = "BH"
+)
+
+###################
+#P of S by species
+###################
+
+df_test <- wilcox_results_df %>%
+  dplyr::filter(!is.na(prob_superiority)) %>%
+  dplyr::filter(species != "Didemnum vexillum")  # keep consistent
+
+wide_sp <- df_test %>%
+  dplyr::select(region, species, prob_superiority) %>%
+  tidyr::pivot_wider(names_from = species, values_from = prob_superiority) %>%
+  tidyr::drop_na()
 
 
+friedman.test(as.matrix(wide_sp[, -1]))
 
 
+k <- ncol(wide_sp[, -1])  # species
+n <- nrow(wide_sp)        # regions
+
+W <- friedman.test(as.matrix(wide_sp[, -1]))$statistic / (n * (k - 1))
+W
 
 
-
-
-
-
-
-
-
-
-
-
+pairwise.wilcox.test(
+  x = df_test$prob_superiority,
+  g = df_test$species,
+  paired = TRUE,
+  p.adjust.method = "BH"
+)
 
 
 

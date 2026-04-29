@@ -71,8 +71,8 @@ collect_window_plot_data <- function(df_monthly, threshold = 0.75) {
 # FIXED MONTH SHIFT: MARCH -> NEXT MARCH
 ###################################
 
-shift_month_march <- function(m) {
-  ifelse(m < 3, m + 12, m)
+shift_month_may <- function(m) {
+  ifelse(m < 5, m + 12, m)
 }
 
 ###################################
@@ -83,9 +83,9 @@ prep_window_segments <- function(window_df) {
 
   window_df %>%
     dplyr::mutate(
-      start_plot = shift_month_march(start_month),
-      end_plot   = shift_month_march(end_month),
-      peak_plot  = shift_month_march(peak_month)
+      start_plot = shift_month_may(start_month),
+      end_plot   = shift_month_may(end_month),
+      peak_plot  = shift_month_may(peak_month)
     ) %>%
     dplyr::mutate(
       end_plot = ifelse(end_plot < start_plot, end_plot + 12, end_plot),
@@ -129,20 +129,23 @@ region_colors <- c(
 )
 
 window_plot_df <- collect_window_plot_data(
-  df_monthly = df,
+  df_monthly = dfMonths,
   threshold = 0.9
 ) %>%
-  dplyr::filter(
-    !(species == "Didemnum vexillum" & region == "MAG")
+  dplyr::left_join(
+    wilcox_results_df %>%
+      dplyr::select(species, region, prob_superiority),
+    by = c("species", "region")
   ) %>%
   dplyr::mutate(
     species = factor(species, levels = species_order),
-    region = factor(region, levels = rev(region_order))
+    region = factor(region, levels = rev(region_order)),
+    alpha_pos = pmax(0, pmin(1, (prob_superiority - 0.5) / 0.5))
   )
 
 window_plot_df2 <- prep_window_segments(window_plot_df)
 
-x_min <- 2.5
+x_min <- 4.5
 x_max <- 15.5
 
 
@@ -150,7 +153,7 @@ above_outside_df <- window_plot_df %>%
   tidyr::unnest_longer(above_outside_months, values_to = "month") %>%
   dplyr::filter(!is.na(month)) %>%
   dplyr::mutate(
-    month_plot = shift_month_march(month),
+    month_plot = shift_month_may(month),
     x_start = month_plot - 0.5,
     x_end   = month_plot + 0.5,
     species = factor(species, levels = species_order),
@@ -179,11 +182,13 @@ ggplot(window_plot_df2) +
       xend = end_plot,
       y = region,
       yend = region,
-      color = region
+      color = region,
+      alpha = alpha_pos
     ),
     linewidth = 4,
     lineend = "round"
   ) +
+  scale_alpha_continuous(range = c(0, 1), limits = c(0, 1), guide = "none") +
   geom_point(
     aes(
       x = peak_plot,
@@ -196,7 +201,7 @@ ggplot(window_plot_df2) +
   scale_color_manual(values = region_colors) +
   scale_x_continuous(
     limits = c(x_min, x_max),
-    breaks = seq(3, 15, by = 1),
+    breaks = seq(5, 15, by = 1),
     labels = shifted_month_labels,
     expand = expansion(mult = c(0.02, 0.02))
   ) +
@@ -284,7 +289,7 @@ W
 
 rank_df <- window_centers_df_complete %>%
   dplyr::mutate(
-    center_shifted = shift_month_march(center_month)
+    center_shifted = shift_month_may(center_month)
   ) %>%
   dplyr::group_by(species) %>%
   dplyr::mutate(
