@@ -146,7 +146,7 @@ window_plot_df <- collect_window_plot_data(
 window_plot_df2 <- prep_window_segments(window_plot_df)
 
 x_min <- 4.5
-x_max <- 15.5
+x_max <- 16.5
 
 
 above_outside_df <- window_plot_df %>%
@@ -201,7 +201,7 @@ ggplot(window_plot_df2) +
   scale_color_manual(values = region_colors) +
   scale_x_continuous(
     limits = c(x_min, x_max),
-    breaks = seq(5, 15, by = 1),
+    breaks = seq(5, 16, by = 1),
     labels = shifted_month_labels,
     expand = expansion(mult = c(0.02, 0.02))
   ) +
@@ -331,20 +331,33 @@ compute_species_clustering <- function(df, sp) {
   dat <- df %>%
     dplyr::filter(species == sp)
 
-  if (nrow(dat) < 2) {
+  n_regions <- nrow(dat)
+
+  if (n_regions < 2) {
     return(tibble::tibble(
       species = sp,
-      clustering_R = NA_real_
+      n_regions = n_regions,
+      clustering_R = NA_real_,
+      p_value = NA_real_
     ))
   }
 
   theta <- 2 * pi * dat$center_month / 12
+  circ <- circular::circular(theta)
 
-  R <- circular::rho.circular(circular::circular(theta))
+  R <- circular::rho.circular(circ)
+
+  p_val <- if (n_regions >= 3) {
+    circular::rayleigh.test(circ)$p.value
+  } else {
+    NA_real_
+  }
 
   tibble::tibble(
     species = sp,
-    clustering_R = R
+    n_regions = n_regions,
+    clustering_R = R,
+    p_value = p_val
   )
 }
 

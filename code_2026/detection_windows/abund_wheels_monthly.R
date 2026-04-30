@@ -1272,7 +1272,7 @@ final <- image_append(image_join(rows), stack = TRUE)
 grid_with_labels <- image_append(c(left_col, final))
 final_labeled <- image_append(c(top_full, grid_with_labels), stack = TRUE)
 
-image_write(final_labeled, "saved_figures/combined_monthly_wheels_90_dark.png")
+image_write(final_labeled, "saved_figures/combined_monthly_wheels_90_dark_new_GOM.png")
 
 
 

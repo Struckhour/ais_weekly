@@ -4,8 +4,7 @@ bof_monthly_station <- dfRawClean %>%
   dplyr::filter(region == "BOF") %>%
   dplyr::group_by(station, species, month) %>%
   dplyr::summarise(
-    decimalLatitude  = dplyr::first(decimalLatitude),
-    decimalLongitude = dplyr::first(decimalLongitude),
+
     mean_log_conc = mean(logConc, na.rm = TRUE),
     sd_log_conc   = sd(logConc, na.rm = TRUE),
     n             = dplyr::n(),
@@ -40,10 +39,6 @@ ggplot(
     y = "Mean log10(concentration + 1)",
     color = "Station"
   )
-
-
-
-
 
 
 
