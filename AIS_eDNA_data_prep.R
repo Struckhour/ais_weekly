@@ -98,6 +98,7 @@ sbe_daily <- new_data %>%
 # ───────────────────────────────────────────────────────────────────────────────
 # 2c. Replace HAL metadata temp/salinity with SBE daily values -----------------
 # ───────────────────────────────────────────────────────────────────────────────
+
 metadata <- metadata %>%
   mutate(
     waterTemp_C  = as.numeric(waterTemp_C),
@@ -118,6 +119,108 @@ metadata <- metadata %>%
   ) %>%
   select(-sbe_temp, -sbe_sal)
 
+
+##################################
+#GOM SALINITY
+##################################
+# ───────────────────────────────────────────────────────────────────────────────
+# 2d. Read GOM salinity data and make station-date means -----------------------
+# ───────────────────────────────────────────────────────────────────────────────
+
+deer_sss_site1 <- read.csv(
+  "./data/SSS_Deer_Island_site1.csv",
+  check.names = FALSE,
+  na.strings  = ""
+) %>%
+  mutate(station = "Sand Beach")
+
+deer_sss_site2 <- read.csv(
+  "./data/SSS_Deer_Island_site2.csv",
+  check.names = FALSE,
+  na.strings  = ""
+) %>%
+  mutate(station = "Causeway")
+
+deer_sss_site3 <- read.csv(
+  "./data/SSS_Deer_Island_site3.csv",
+  check.names = FALSE,
+  na.strings  = ""
+) %>%
+  mutate(station = "Isle Haut ferry")
+
+deer_sss <- bind_rows(deer_sss_site1, deer_sss_site2, deer_sss_site3)
+
+gom_sal_daily <- deer_sss %>%
+  dplyr::mutate(
+    date = lubridate::mdy(Time),
+    samplingStation = station,
+    Salinity = as.numeric(Salinity)
+  ) %>%
+  dplyr::group_by(date, samplingStation) %>%
+  dplyr::summarise(
+    gom_sal = mean(Salinity, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+metadata <- metadata %>%
+  dplyr::left_join(
+    gom_sal_daily,
+    by = c("date", "samplingStation")
+  ) %>%
+  dplyr::mutate(
+    salinity_ppt = dplyr::if_else(
+      region == "GOM" & !is.na(gom_sal),
+      gom_sal,
+      salinity_ppt
+    )
+  ) %>%
+  dplyr::select(-gom_sal)
+
+###########################
+#GOM TEMP
+###########################
+
+deer_sst <- read.csv(
+  "./data/Deer_Isle_SST.csv",
+  row.names = 1,
+  check.names = FALSE,
+  na.strings  = ""
+) %>%
+  dplyr::mutate(
+    station = dplyr::recode(
+      site_name,
+      "Deer Isle 1" = "Sand Beach",
+      "Deer Isle2" = "Causeway",
+      "Deer Isle3" = "Isle Haut ferry"
+    )
+  )
+
+gom_temp_daily <- deer_sst %>%
+  dplyr::mutate(
+    date = as.Date(time)
+  ) %>%
+  dplyr::group_by(date, station) %>%
+  dplyr::summarise(
+    gom_temp = mean(sst_c, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+metadata <- metadata %>%
+  dplyr::left_join(
+    gom_temp_daily,
+    by = c("date", "samplingStation" = "station")
+  ) %>%
+  dplyr::mutate(
+    waterTemp_C = dplyr::if_else(
+      region == "GOM" & !is.na(gom_temp),
+      gom_temp,
+      waterTemp_C
+    )
+  ) %>%
+  dplyr::select(-gom_temp)
+
+#################################
+#################################
 #CHANGE RIDICULOUS PH to NA
 metadata <- metadata %>%
   dplyr::mutate(
@@ -219,7 +322,7 @@ month_labels_df <- map_dfr(names(start_months), function(reg) {
 month_labels_split <- split(month_labels_df, ~region)
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 8. Remove known Halifax outliers (19‑Oct-2023 samples) -----------------------
+# 8. Remove known Halifax outliers and GOM region (Causeway and late 2024) (19‑Oct-2023 samples) -----------------------
 # ───────────────────────────────────────────────────────────────────────────────
 outlierHal <- dfRaw %>%
   dplyr::filter(
@@ -234,7 +337,8 @@ dfRawClean <- dfRaw %>%
   ) %>%
   dplyr::filter(
     !(species == "Didemnum vexillum" & !region %in% c("BOF", "GOM")),
-    station != "Causeway"
+    station != "Causeway",
+    date <= as.Date("2024-10-31")
   )
 
 # ───────────────────────────────────────────────────────────────────────────────

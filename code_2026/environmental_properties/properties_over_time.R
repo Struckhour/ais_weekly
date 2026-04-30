@@ -25,7 +25,8 @@ ggplot(metadata_clean, aes(x = date, y = salinity_ppt)) +
 
 ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = "loess", se = FALSE) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.1) +
+  scale_color_manual(values = hybrid_color) +
   scale_x_date(
     date_breaks = "1 month",
     date_labels = "%b"
@@ -72,12 +73,17 @@ metadata_temp <- metadata %>%
 # Plot temperature over time by region
 ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = "loess", se = FALSE) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.1) +
+  scale_color_manual(values = hybrid_color) +
+  scale_x_date(
+    date_breaks = "1 month",
+    date_labels = "%b"
+  ) +
   theme_classic() +
   labs(
-    title = "Water Temperature Over Time by Region",
+    title = "Temperature Over Time",
     x = "Date",
-    y = "Temperature (°C)",
+    y = "Temp (C)",
     color = "Region"
   )
 
