@@ -28,6 +28,113 @@ hybrid_color <- c(
 )
 
 
+################
+# ALL REGIONS — raw concentrations by actual sampling date
+################
+
+df_plot <- dfRawClean %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order),
+    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM"))
+  ) %>%
+  filter(
+    date >= as.Date("2023-01-01"),
+    date <= as.Date("2024-08-30")
+  )
+
+ggplot(
+  df_plot,
+  aes(
+    x = date,
+    y = concentration + 1,
+    color = region
+  )
+) +
+  geom_point(size = 0.8, alpha = 0.75) +
+  geom_smooth(
+    aes(group = 1),
+    method = "loess",
+    se = TRUE,
+    color = "black",
+    linewidth = 0.6,
+    span = 0.35
+  ) +
+  scale_color_manual(values = hybrid_color) +
+  scale_y_log10() +
+  facet_grid(region ~ species) +
+  scale_x_date(
+    date_breaks = "1 month",
+    labels = function(d) substr(month.abb[lubridate::month(d)], 1, 1)
+  ) +
+  theme_classic() +
+  labs(
+    title = "eDNA Concentration Over Time by Species and Region",
+    x = "Month",
+    y = "Log10(Concentration + 1)",
+    color = "Region"
+  ) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(size = 9),
+    strip.background = element_rect(color = "black", fill = "white"),
+    strip.text = element_text(size = 10),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
+    panel.spacing = unit(0, "lines")
+  )
+
+
+################
+# ALL REGIONS — raw concentrations over full sampling year
+################
+
+df_plot <- dfRawClean %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order),
+    region = factor(region, levels = c("MAG", "PEI", "HAL", "BOF", "GOM")),
+    month_plot_label = substr(month.abb[month], 1, 1)
+  )
+
+ggplot(
+  df_plot,
+  aes(
+    x = month_reordered,
+    y = concentration + 1,
+    color = region
+  )
+) +
+  geom_point(size = 0.8, alpha = 0.75) +
+  geom_smooth(
+    aes(group = 1),
+    method = "loess",
+    se = FALSE,
+    color = "black",
+    linewidth = 0.8,
+    span = 0.45
+  ) +
+  scale_color_manual(values = hybrid_color) +
+  scale_y_log10() +
+  facet_grid(region ~ species) +
+  scale_x_continuous(
+    breaks = 1:12,
+    labels = function(x) substr(month.abb[((x - 1) %% 12) + 1], 1, 1)
+  ) +
+  theme_classic() +
+  labs(
+    title = "eDNA Concentration Over Time by Species and Region",
+    x = "Month",
+    y = "Log10(Concentration + 1)",
+    color = "Region"
+  ) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(size = 7),
+    strip.background = element_rect(color = "black", fill = "white"),
+    strip.text = element_text(size = 7),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
+    panel.spacing = unit(0, "lines")
+  )
+
+
 
 
 ################
