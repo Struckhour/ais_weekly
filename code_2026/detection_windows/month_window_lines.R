@@ -128,6 +128,24 @@ region_colors <- c(
   GOM = "#fb8072"
 )
 
+region_colors <- c(
+  MAG = "#008C78",
+  PEI = "#3A5549",
+  HAL = "#B89945",
+  BOF = "#4FA7C0",
+  GOM = "#E57266"
+)
+
+region_colors <- c(
+  MAG = "#007566",
+  PEI = "#31493E",
+  HAL = "#A8893D",
+  BOF = "#3E8FA6",
+  GOM = "#D96459"
+)
+
+
+
 window_plot_df <- collect_window_plot_data(
   df_monthly = dfMonths,
   threshold = 0.9
@@ -200,7 +218,7 @@ ggplot(window_plot_df2) +
   facet_wrap(~ species, ncol = 1) +
   scale_color_manual(values = region_colors) +
   scale_x_continuous(
-    limits = c(x_min, x_max),
+    limits = c(x_min, x_max + 1),
     breaks = seq(5, 16, by = 1),
     labels = shifted_month_labels,
     expand = expansion(mult = c(0.02, 0.02))
@@ -218,6 +236,16 @@ ggplot(window_plot_df2) +
     panel.grid.minor = element_blank(),
     strip.text = element_text(face = "italic"),
     axis.text.y = element_text(face = "bold")
+  ) +
+  geom_text(
+    aes(
+      x = x_max + 0.2,   # moved left (was +0.5)
+      y = region,
+      label = sprintf("%.0f%%", prob_superiority * 100)
+    ),
+    hjust = 0,
+    size = 3,
+    color = "grey10"
   )
 
 

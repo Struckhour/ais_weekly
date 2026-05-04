@@ -23,10 +23,11 @@ ggplot(metadata_clean, aes(x = date, y = salinity_ppt)) +
     y = "Salinity (ppt)"
   )
 
-ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region)) +
-  geom_point(alpha = 0.6) +
+ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region, shape = region)) +
+  geom_point(alpha = 0.6, size = 2.5) +
   geom_smooth(method = "loess", se = FALSE, span = 0.1) +
   scale_color_manual(values = hybrid_color) +
+  scale_shape_manual(values = c(0, 2, 15, 17, 18)) +  # pick any 5 distinct shapes
   scale_x_date(
     date_breaks = "1 month",
     date_labels = "%b"
@@ -36,7 +37,8 @@ ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region)) +
     title = "Salinity Over Time",
     x = "Date",
     y = "Salinity (ppt)",
-    color = "Region"
+    color = "Region",
+    shape = "Region"
   )
 
 
@@ -71,10 +73,11 @@ metadata_temp <- metadata %>%
   filter(!is.na(waterTemp_C))              # remove missing temperatures
 
 # Plot temperature over time by region
-ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region)) +
-  geom_point(alpha = 0.6) +
+ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region, shape = region)) +
+  geom_point(alpha = 0.6, size = 2.5) +
   geom_smooth(method = "loess", se = FALSE, span = 0.1) +
   scale_color_manual(values = hybrid_color) +
+  scale_shape_manual(values = c(0, 2, 15, 17, 18)) +  # pick any 5 distinct shapes
   scale_x_date(
     date_breaks = "1 month",
     date_labels = "%b"
@@ -84,7 +87,8 @@ ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region)) +
     title = "Temperature Over Time",
     x = "Date",
     y = "Temp (C)",
-    color = "Region"
+    color = "Region",
+    shape = "Region"
   )
 
 
