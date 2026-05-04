@@ -299,7 +299,7 @@ circular_results
 
 library(gt)
 # your preferred orders (adjust if needed)
-region_order <- c("MAG", "PEI", "HAL", "BOF")
+region_order <- c("MAG", "PEI", "HAL", "BOF", "GOM")
 species_order <- c(
   "Membranipora membranacea",
   "Botrylloides violaceus",
@@ -362,5 +362,9 @@ circular_results %>%
   tab_options(
     table.background.color = "white",
     heading.background.color = "white",
-    column_labels.background.color = "white"
+    column_labels.background.color = "white",
+
+    data_row.padding = gt::px(2),
+    column_labels.padding = gt::px(2),
+    heading.padding = gt::px(2)
   )
