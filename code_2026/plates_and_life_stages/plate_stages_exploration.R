@@ -103,6 +103,12 @@ ggplot(plateStates, aes(x = date, y = state_row, fill = State)) +
 
 library(patchwork)
 
+normalize_to_max <- function(x) {
+  mx <- max(x, na.rm = TRUE)
+  if (!is.finite(mx) || mx == 0) return(rep(NA_real_, length(x)))
+  x / mx
+}
+
 # ----------------------------
 # Settings
 # ----------------------------
@@ -206,11 +212,43 @@ make_species_region_panel <- function(target_species, target_region,
     filter(!is.na(State))
 
   # ---- qPCR data ----
+
   qpcr_one <- dfRawClean %>%
     filter(
       species == target_species,
       region == target_region
+    ) %>%
+    group_by(date) %>%
+    summarise(
+      value = mean(logConc, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      value_norm = normalize_to_max(value),
+      source = "qPCR logConc"
     )
+
+  # ---- Plate abundance data ----
+
+  plate_one <- plateAbundance %>%
+    filter(
+      species == target_species,
+      region == target_region,
+      date >= as.Date("2022-06-01"),
+      date <= as.Date("2028-05-31")
+    ) %>%
+    group_by(date) %>%
+    summarise(
+      value = mean(Avg, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      value_norm = normalize_to_max(value),
+      source = "Plate Avg"
+    )
+
+  # ---- Combined abundance data ----
+  abundance_one <- bind_rows(qpcr_one, plate_one)
 
   # ---- If both are empty, return blank ----
   if (nrow(plateStates_one) == 0 && nrow(qpcr_one) == 0) {
@@ -220,13 +258,13 @@ make_species_region_panel <- function(target_species, target_region,
     )
   }
 
-  # ---- Top plot: qPCR ----
-  p_qpcr <- ggplot(qpcr_one, aes(x = date, y = concentration + 1)) +
-    geom_point(size = 1.2, alpha = 0.5) +
-    geom_smooth(method = "loess", se = TRUE, color = "black") +
-    scale_y_log10(
-      limits = c(global_y_min, global_y_max)
-    ) +
+
+
+  # ---- Top plot: qPCR + plate abundance ----
+  p_qpcr <- ggplot(abundance_one, aes(x = date, y = value_norm, color = source)) +
+    geom_point(size = 1.2, alpha = 0.6) +
+    geom_line(alpha = 0.8) +
+    scale_y_continuous(limits = c(0, 1)) +
     scale_x_date(
       limits = c(global_x_min, global_x_max),
       date_breaks = "1 month",
@@ -235,7 +273,8 @@ make_species_region_panel <- function(target_species, target_region,
     theme_classic() +
     labs(
       x = NULL,
-      y = if (show_left_y) "eDNA conc.\n(+1, log10)" else NULL
+      y = if (show_left_y) "Relative\nabundance" else NULL,
+      color = "Source"
     ) +
     theme(
       axis.text.x = element_blank(),
@@ -244,7 +283,7 @@ make_species_region_panel <- function(target_species, target_region,
       axis.text.y  = if (show_left_y) element_text() else element_blank(),
       axis.ticks.y = if (show_left_y) element_line() else element_blank(),
       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-      legend.position = "none"
+      legend.position = if (show_legend) "right" else "none"
     )
 
   # ---- Bottom plot: life stages

@@ -124,21 +124,29 @@ plate_weekly <- plate_plot_df %>%
     .groups = "drop"
   )
 
-# normalize by overall max only, within each source
-qpcr_max <- max(qpcr_weekly$value, na.rm = TRUE)
-plate_max <- max(plate_weekly$value, na.rm = TRUE)
+normalize_01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  if (!is.finite(rng[1]) || !is.finite(rng[2]) || diff(rng) == 0) {
+    return(rep(NA_real_, length(x)))
+  }
+  (x - rng[1]) / diff(rng)
+}
 
 qpcr_weekly <- qpcr_weekly %>%
+  group_by(region, species) %>%
   mutate(
-    value_norm = value / qpcr_max,
+    value_norm = normalize_01(value),
     source = "qPCR logConc"
-  )
+  ) %>%
+  ungroup()
 
 plate_weekly <- plate_weekly %>%
+  group_by(region, species) %>%
   mutate(
-    value_norm = value / plate_max,
+    value_norm = normalize_01(value),
     source = "Plate Avg"
-  )
+  ) %>%
+  ungroup()
 
 # for correlations
 corr_df_weekly <- full_join(
@@ -151,8 +159,12 @@ corr_df_weekly <- full_join(
 corr_results_weekly <- corr_df_weekly %>%
   group_by(region, species) %>%
   summarise(
-    n = sum(!is.na(value_norm_qpcr) & !is.na(value_norm_plate)),
-    cor = cor(value_norm_qpcr, value_norm_plate, use = "complete.obs"),
+    n = sum(complete.cases(value_norm_qpcr, value_norm_plate)),
+    cor = if (n > 2) {
+      cor(value_norm_qpcr, value_norm_plate, use = "complete.obs")
+    } else {
+      NA_real_
+    },
     p_value = if (n > 2) {
       cor.test(value_norm_qpcr, value_norm_plate)$p.value
     } else {
@@ -227,3 +239,77 @@ ggplot(plot_df, aes(x = date, y = value_norm, color = source)) +
     y = "Normalized abundance (0–1)",
     color = "Source"
   )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########################
+#Lag correlation between plate and qPCR
+###########################
+
+library(dplyr)
+library(tidyr)
+library(lubridate)
+corr_df <- plot_df %>%
+  mutate(week = lubridate::isoweek(date)) %>%
+  group_by(region, species, week, source) %>%
+  summarise(
+    value_norm = mean(value_norm, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = source,
+    values_from = value_norm
+  ) %>%
+  rename(
+    qpcr = `qPCR logConc`,
+    plate = `Plate Avg`
+  ) %>%
+  group_by(region, species) %>%
+  complete(week = 1:52) %>%
+  arrange(region, species, week) %>%
+  ungroup()
+
+crosscorr_results <- corr_df %>%
+  group_by(region, species) %>%
+  group_modify(~{
+    prof <- circular_lag_profile(.x$plate, .x$qpcr)
+
+    if (nrow(prof) == 0 || all(is.na(prof$cor))) {
+      return(tibble(
+        best_lag = NA_real_,
+        max_cor = NA_real_
+      ))
+    }
+
+    best_i <- which.max(as.numeric(prof$cor))
+
+    tibble(
+      best_lag = prof$lag[best_i],
+      max_cor = prof$cor[best_i]
+    )
+  }) %>%
+  ungroup()
+
+crosscorr_results
