@@ -1,209 +1,8 @@
 source('./AIS_eDNA_data_prep.R')
 
-qpcr_weekly <- dfRawClean %>%
-  group_by(region, species, week = isoweek(date)) %>%
-  summarise(
-    value = mean(logConc, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-ref_curve <- qpcr_weekly %>%
-  group_by(species, week) %>%
-  summarise(
-    value = median(value, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-
-qpcr_weekly <- qpcr_weekly %>%
-  group_by(region, species) %>%
-  complete(week = 1:52) %>%
-  arrange(region, species, week) %>%
-  ungroup()
-
-ref_curve <- ref_curve %>%
-  group_by(species) %>%
-  complete(week = 1:52) %>%
-  arrange(species, week) %>%
-  ungroup()
-
-qpcr_weekly %>% count(region, species)
-ref_curve %>% count(species)
-
-lag_vs_ref <- qpcr_weekly %>%
-  group_by(region, species) %>%
-  group_modify(~{
-
-    sp <- .y$species[[1]]
-
-    ref <- ref_curve %>%
-      filter(species == sp) %>%
-      arrange(week)
-
-    dat <- .x %>%
-      arrange(week)
-
-    prof <- circular_lag_profile(ref$value, dat$value)
-
-    if (nrow(prof) == 0 || all(is.na(prof$cor))) {
-      return(tibble(
-        lag = NA_real_,
-        cor = NA_real_
-      ))
-    }
-
-    best_i <- which.max(prof$cor)
-
-    tibble(
-      lag = prof$lag[best_i],
-      cor = prof$cor[best_i]
-    )
-  }) %>%
-  ungroup()
-
-
-lag_summary <- lag_vs_ref %>%
-  group_by(region) %>%
-  summarise(
-    mean_lag = mean(lag, na.rm = TRUE),
-    sd_lag = sd(lag, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  arrange(mean_lag)
-
-
-lag_filtered <- lag_vs_ref %>%
-  filter(cor > 0.7)
-lag_summary_filtered <- lag_filtered %>%
-  group_by(region) %>%
-  summarise(
-    mean_lag = mean(lag, na.rm = TRUE),
-    sd_lag = sd(lag, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  arrange(mean_lag)
-
-
-
-lag_summary_weighted <- lag_vs_ref %>%
-  filter(!is.na(cor), cor > 0) %>%
-  group_by(region) %>%
-  summarise(
-    mean_lag = weighted.mean(lag, w = cor, na.rm = TRUE),
-    sd_lag = sqrt(weighted.mean((lag - mean_lag)^2, w = cor, na.rm = TRUE)),
-    .groups = "drop"
-  ) %>%
-  arrange(mean_lag)
-
-
-
-###################
-#PERMUTATION TEST
-###################
-
-obs_stat <- lag_summary_weighted %>%
-  summarise(var = var(mean_lag)) %>%
-  pull(var)
-
-set.seed(1)
-
-n_perm <- 2000
-
-perm_stats <- replicate(n_perm, {
-
-  permuted <- lag_vs_ref %>%
-    group_by(species) %>%
-    mutate(region_perm = sample(region)) %>%
-    ungroup()
-
-  perm_summary <- permuted %>%
-    group_by(region_perm) %>%
-    summarise(
-      mean_lag = weighted.mean(lag, w = cor, na.rm = TRUE),
-      .groups = "drop"
-    )
-
-  var(perm_summary$mean_lag, na.rm = TRUE)
-})
-
-p_value <- mean(perm_stats >= obs_stat)
-p_value
-
-ggplot() +
-  geom_line(data = qpcr_weekly,
-            aes(x = week, y = value, color = region),
-            alpha = 0.6) +
-  geom_line(data = ref_curve,
-            aes(x = week, y = value),
-            color = "black",
-            linewidth = 1.2) +
-  facet_wrap(~ species, scales = "free_y") +
-  theme_classic()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ##########################
-#NO MEDIAN REF, NO WE USE PAIRWISE LEAST SQUARES
+#NO MEDIAN REF, NOW WE USE PAIRWISE LEAST SQUARES
 ##########################
 
 
@@ -467,3 +266,150 @@ region_position_summary_strong <- region_positions_by_species_strong %>%
   arrange(mean_position)
 
 region_position_summary_strong
+
+
+###############
+#PLOTS
+###############
+
+pairwise_lags %>%
+  mutate(
+    pair = paste(region1, region2, sep = " vs "),
+    species = factor(species, levels = species_order)
+  ) %>%
+  ggplot(aes(x = pair, y = species, fill = cor)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = paste0("lag=", lag, "\nr=", round(cor, 2))), size = 3) +
+  scale_fill_gradient(low = "grey90", high = "black") +
+  theme_classic() +
+  labs(
+    x = "Region pair",
+    y = "Species",
+    fill = "Max correlation",
+    title = "Pairwise circular cross-correlation between regional qPCR curves"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+#
+# plot_alignment_for_species <- function(target_species) {
+#
+#   shifts <- region_positions_by_species %>%
+#     filter(species == target_species) %>%
+#     select(region, position)
+#
+#   plot_dat <- qpcr_weekly %>%
+#     filter(species == target_species) %>%
+#     left_join(shifts, by = "region") %>%
+#     group_by(region) %>%
+#     mutate(
+#       value_norm = value / max(value, na.rm = TRUE),
+#       week_shifted = ((week + round(position) - 1) %% 52) + 1
+#     ) %>%
+#     ungroup()
+#
+#   p_before <- ggplot(plot_dat, aes(x = week, y = value_norm, color = region)) +
+#     geom_line(linewidth = 1, alpha = 0.9) +
+#     scale_color_manual(values = hybrid_color) +
+#     theme_classic() +
+#     labs(
+#       title = paste(target_species, "- before alignment"),
+#       x = "Week",
+#       y = "Normalized mean log concentration"
+#     )
+#
+#   p_after <- ggplot(plot_dat, aes(x = week_shifted, y = value_norm, color = region)) +
+#     geom_line(linewidth = 1, alpha = 0.9) +
+#     scale_color_manual(values = hybrid_color) +
+#     theme_classic() +
+#     labs(
+#       title = paste(target_species, "- after alignment"),
+#       x = "Shifted week",
+#       y = "Normalized mean log concentration"
+#     ) +
+#     theme(legend.position = "none")
+#
+#   p_before / p_after
+# }
+
+plot_alignment_for_species <- function(target_species) {
+
+  shifts <- region_positions_by_species %>%
+    filter(species == target_species) %>%
+    select(region, position)
+
+  plot_dat <- qpcr_weekly %>%
+    filter(species == target_species) %>%
+    left_join(shifts, by = "region") %>%
+    group_by(region) %>%
+    mutate(
+      is_obs = !is.na(value),
+      value_filled = fill_circular_series(value),
+      value_filled_norm = value_filled / max(value_filled, na.rm = TRUE),
+      value_norm = value / max(value, na.rm = TRUE),
+      week_shifted = ((week + round(position) - 1) %% 52) + 1
+    ) %>%
+    ungroup()
+
+  # BEFORE
+  p_before <- ggplot(plot_dat, aes(x = week, color = region)) +
+
+    # thin continuous line (interpolated curve)
+    geom_line(
+      aes(y = value_filled_norm),
+      linewidth = 0.7,
+      alpha = 0.9
+    ) +
+
+    # dots = real observations only
+    geom_point(
+      data = ~ dplyr::filter(.x, is_obs),
+      aes(y = value_norm),
+      size = 1.8,
+      alpha = 0.9
+    ) +
+
+    scale_color_manual(values = hybrid_color) +
+    theme_classic() +
+    labs(
+      title = paste(target_species, "- before alignment"),
+      x = "Week",
+      y = "Normalized mean log concentration"
+    )
+
+  # AFTER
+  p_after <- ggplot(plot_dat, aes(x = week_shifted, color = region)) +
+
+    geom_line(
+      aes(y = value_filled_norm),
+      linewidth = 0.7,
+      alpha = 0.9
+    ) +
+
+    geom_point(
+      data = ~ dplyr::filter(.x, is_obs),
+      aes(y = value_norm),
+      size = 1.8,
+      alpha = 0.9
+    ) +
+
+    scale_color_manual(values = hybrid_color) +
+    theme_classic() +
+    labs(
+      title = paste(target_species, "- after alignment"),
+      x = "Shifted week",
+      y = "Normalized mean log concentration"
+    ) +
+    theme(legend.position = "none")
+
+  p_before / p_after
+}
+
+
+
+plot_alignment_for_species("Membranipora membranacea")
+plot_alignment_for_species("Botrylloides violaceus")
+plot_alignment_for_species("Ciona intestinalis")
+plot_alignment_for_species("Didemnum vexillum")
+plot_alignment_for_species("Carcinus maenas")
