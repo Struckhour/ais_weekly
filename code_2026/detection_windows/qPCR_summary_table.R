@@ -9,7 +9,7 @@ region_species_tested <- dfRawClean %>%
   dplyr::distinct(region, species)
 
 all_samples <- dfRawClean %>%
-  dplyr::distinct(materialSampleID, region, date, month)
+  dplyr::distinct(materialSampleID, region, date, station, month)
 
 sample_species_grid <- all_samples %>%
   dplyr::left_join(region_species_tested, by = "region")
@@ -619,6 +619,26 @@ ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
   scale_fill_manual(values = hybrid_color) +
   theme_classic()
 
+ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
+  geom_violin(trim = FALSE, alpha = 0.8) +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_fill_manual(values = hybrid_color) +
+  theme_classic()
+
+ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
+  geom_violin(trim = FALSE, alpha = 0.8) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white") +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_fill_manual(values = hybrid_color) +
+  theme_classic()
+
+ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
+  geom_violin(trim = FALSE, alpha = 0.8) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white") +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_fill_manual(values = c("black", "black", "black", "black", "black")) +
+  theme_classic()
+
 df_full %>%
   group_by(species) %>%
   kruskal_test(logConc ~ region)
@@ -629,10 +649,29 @@ pairwise_results <- df_full %>%
 
 print(pairwise_results, n=Inf, width=Inf)
 
+################
+#STATION
+################
 
+ggplot(df_full, aes(x = interaction(region, station), y = logConc, fill = region)) +
+  geom_violin(trim = FALSE, alpha = 0.8) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white") +
+  facet_wrap(~ species, scales = "free_y", ncol = 1) +
+  scale_fill_manual(values = hybrid_color) +
+  theme_classic() +
+  labs(x = "Region / Station") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.spacing = unit(0.5, "lines"))
 
-
-
+ggplot(df_full, aes(x = interaction(region, station), y = logConc, fill = region)) +
+  geom_boxplot(width = 0.5, outlier.alpha = 0.3) +
+  facet_wrap(~ species, scales = "free_y", ncol = 1) +
+  scale_fill_manual(values = hybrid_color) +
+  theme_classic() +
+  labs(x = "Region / Station") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.spacing = unit(0.5, "lines")
+  )
 
 
 
