@@ -249,8 +249,16 @@ ggplot(window_plot_df2) +
   )
 
 
+avg_ps_species <- window_plot_df2 %>%
+  dplyr::group_by(species) %>%
+  dplyr::summarise(
+    mean_ps = mean(prob_superiority, na.rm = TRUE),
+    sd_ps = sd(prob_superiority, na.rm = TRUE),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
 
-
+avg_ps_species
 
 
 
@@ -286,7 +294,7 @@ circular_midpoint <- function(start, end, n = 12) {
   ((start + d / 2 - 1) %% n) + 1
 }
 
-required_n_regions <- 5
+min_n_regions <- 2
 
 window_centers_df <- window_plot_df %>%
   dplyr::mutate(
@@ -296,7 +304,7 @@ window_centers_df <- window_plot_df %>%
 # keep only species with full regional coverage
 window_centers_df_complete <- window_centers_df %>%
   dplyr::group_by(species) %>%
-  dplyr::filter(dplyr::n_distinct(region) == required_n_regions) %>%
+  dplyr::filter(dplyr::n_distinct(region) >= min_n_regions) %>%
   dplyr::ungroup()
 
 center_matrix <- window_centers_df_complete %>%
@@ -343,6 +351,363 @@ region_rank_summary %>%
     title = "Regional timing ranks"
   ) %>%
   cols_align(align = "center", -region)
+
+
+
+###############
+#NEW TIMING ANALYSIS
+###############
+month_offset <- function(x, ref, n = 12) {
+  ((x - ref + n / 2) %% n) - n / 2
+}
+
+window_center_offsets <- window_centers_df_complete %>%
+  dplyr::mutate(
+    center_shifted = shift_month_may(center_month)
+  ) %>%
+  dplyr::group_by(species) %>%
+  dplyr::mutate(
+    relative_month = center_shifted - mean(center_shifted, na.rm = TRUE)
+  ) %>%
+  dplyr::ungroup()
+region_center_summary <- window_center_offsets %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_relative_month = mean(relative_month, na.rm = TRUE),
+    sd_relative_month = sd(relative_month, na.rm = TRUE),
+    n_species = dplyr::n_distinct(species),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    rank = rank(mean_relative_month, ties.method = "first")
+  ) %>%
+  dplyr::arrange(rank)
+
+region_center_summary %>%
+  gt() %>%
+  fmt_number(columns = c(rank, sd_relative_month), decimals = 2) %>%
+  tab_header(
+    title = "Regional timing ranks"
+  ) %>%
+  cols_align(align = "center", -region)
+
+obs_stat_centers <- region_center_summary %>%
+  dplyr::summarise(
+    stat = var(mean_relative_month, na.rm = TRUE)
+  ) %>%
+  dplyr::pull(stat)
+
+obs_stat_centers
+
+
+permute_once <- function(df) {
+  df %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(region = sample(region)) %>%
+    dplyr::ungroup()
+}
+compute_perm_stat_centers <- function(df_perm) {
+
+  offsets <- df_perm %>%
+    dplyr::mutate(
+      center_shifted = shift_month_may(center_month)
+    ) %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(
+      relative_month = center_shifted - mean(center_shifted, na.rm = TRUE)
+    ) %>%
+    dplyr::ungroup()
+
+  region_summary <- offsets %>%
+    dplyr::group_by(region) %>%
+    dplyr::summarise(
+      mean_relative_month = mean(relative_month, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  var(region_summary$mean_relative_month, na.rm = TRUE)
+}
+set.seed(123)
+
+perm_stats <- replicate(
+  1000,
+  compute_perm_stat_centers(
+    permute_once(window_centers_df_complete)
+  )
+)
+
+p_value <- mean(perm_stats >= obs_stat_centers)
+
+
+
+
+
+###############
+# WINDOW CENTER TIMING ANALYSIS
+# pairwise circular month differences + reconciled regional positions
+###############
+###############
+# WINDOW CENTER TIMING ANALYSIS
+# coherent per-species timing positions
+###############
+
+circular_midpoint <- function(start, end, n = 12) {
+  d <- ((end - start + n) %% n)
+  ((start + d / 2 - 1) %% n) + 1
+}
+
+shift_month_may <- function(m) {
+  ifelse(m < 5, m + 12, m)
+}
+
+min_n_regions <- 2
+
+window_centers_df <- window_plot_df %>%
+  dplyr::mutate(
+    center_month = circular_midpoint(start_month, end_month)
+  )
+
+window_centers_df_use <- window_centers_df %>%
+  dplyr::group_by(species) %>%
+  dplyr::filter(dplyr::n_distinct(region) >= min_n_regions) %>%
+  dplyr::ungroup()
+
+window_center_offsets <- window_centers_df_use %>%
+  dplyr::mutate(
+    center_unwrapped = shift_month_may(center_month)
+  ) %>%
+  dplyr::group_by(species) %>%
+  dplyr::mutate(
+    relative_month = center_unwrapped - mean(center_unwrapped, na.rm = TRUE)
+  ) %>%
+  dplyr::ungroup()
+
+region_center_summary <- window_center_offsets %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_relative_month = mean(relative_month, na.rm = TRUE),
+    sd_relative_month = sd(relative_month, na.rm = TRUE),
+    n_species = dplyr::n_distinct(species),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    rank = rank(mean_relative_month, ties.method = "first")
+  ) %>%
+  dplyr::arrange(rank)
+
+region_center_summary
+
+obs_stat_centers <- region_center_summary %>%
+  dplyr::summarise(
+    stat = var(mean_relative_month, na.rm = TRUE)
+  ) %>%
+  dplyr::pull(stat)
+
+obs_stat_centers
+
+
+###############
+# PERMUTATION TEST FOR WINDOW CENTERS
+###############
+
+permute_once_centers <- function(df) {
+  df %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(region = sample(region)) %>%
+    dplyr::ungroup()
+}
+
+compute_perm_stat_centers <- function(df_perm) {
+
+  offsets_perm <- df_perm %>%
+    dplyr::mutate(
+      center_unwrapped = shift_month_may(center_month)
+    ) %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(
+      relative_month = center_unwrapped - mean(center_unwrapped, na.rm = TRUE)
+    ) %>%
+    dplyr::ungroup()
+
+  summary_perm <- offsets_perm %>%
+    dplyr::group_by(region) %>%
+    dplyr::summarise(
+      mean_relative_month = mean(relative_month, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  var(summary_perm$mean_relative_month, na.rm = TRUE)
+}
+
+set.seed(123)
+
+n_perm <- 1000
+perm_stats_centers <- numeric(n_perm)
+
+start_time <- Sys.time()
+
+for (i in seq_len(n_perm)) {
+
+  perm_stats_centers[i] <- compute_perm_stat_centers(
+    permute_once_centers(window_centers_df_use)
+  )
+
+  if (i %% 50 == 0) {
+    elapsed <- as.numeric(Sys.time() - start_time, units = "mins")
+    rate <- elapsed / i
+    eta <- rate * (n_perm - i)
+
+    cat(sprintf(
+      "Completed %d / %d | elapsed: %.1f mins | ETA: %.1f mins\n",
+      i, n_perm, elapsed, eta
+    ))
+  }
+}
+
+p_value_centers <- mean(perm_stats_centers >= obs_stat_centers, na.rm = TRUE)
+
+p_value_centers
+
+#peak month rather than window center
+
+###############
+# PEAK MONTH TIMING ANALYSIS
+# coherent per-species timing positions
+###############
+
+min_n_regions <- 2
+
+peak_month_df_use <- window_plot_df %>%
+  dplyr::group_by(species) %>%
+  dplyr::filter(dplyr::n_distinct(region) >= min_n_regions) %>%
+  dplyr::ungroup()
+
+peak_month_offsets <- peak_month_df_use %>%
+  dplyr::mutate(
+    peak_unwrapped = shift_month_may(peak_month)
+  ) %>%
+  dplyr::group_by(species) %>%
+  dplyr::mutate(
+    relative_month = peak_unwrapped - mean(peak_unwrapped, na.rm = TRUE)
+  ) %>%
+  dplyr::ungroup()
+
+region_peak_summary <- peak_month_offsets %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_relative_month = mean(relative_month, na.rm = TRUE),
+    sd_relative_month = sd(relative_month, na.rm = TRUE),
+    n_species = dplyr::n_distinct(species),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    rank = rank(mean_relative_month, ties.method = "first")
+  ) %>%
+  dplyr::arrange(rank)
+
+region_peak_summary
+
+obs_stat_peaks <- region_peak_summary %>%
+  dplyr::summarise(
+    stat = var(mean_relative_month, na.rm = TRUE)
+  ) %>%
+  dplyr::pull(stat)
+
+obs_stat_peaks
+
+
+###############
+# PERMUTATION TEST FOR PEAK MONTHS
+###############
+
+permute_once_peaks <- function(df) {
+  df %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(region = sample(region)) %>%
+    dplyr::ungroup()
+}
+
+compute_perm_stat_peaks <- function(df_perm) {
+
+  offsets_perm <- df_perm %>%
+    dplyr::mutate(
+      peak_unwrapped = shift_month_may(peak_month)
+    ) %>%
+    dplyr::group_by(species) %>%
+    dplyr::mutate(
+      relative_month = peak_unwrapped - mean(peak_unwrapped, na.rm = TRUE)
+    ) %>%
+    dplyr::ungroup()
+
+  summary_perm <- offsets_perm %>%
+    dplyr::group_by(region) %>%
+    dplyr::summarise(
+      mean_relative_month = mean(relative_month, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  var(summary_perm$mean_relative_month, na.rm = TRUE)
+}
+
+set.seed(123)
+
+n_perm <- 1000
+perm_stats_peaks <- numeric(n_perm)
+
+start_time <- Sys.time()
+
+for (i in seq_len(n_perm)) {
+
+  perm_stats_peaks[i] <- compute_perm_stat_peaks(
+    permute_once_peaks(peak_month_df_use)
+  )
+
+  if (i %% 50 == 0) {
+    elapsed <- as.numeric(Sys.time() - start_time, units = "mins")
+    rate <- elapsed / i
+    eta <- rate * (n_perm - i)
+
+    cat(sprintf(
+      "Completed %d / %d | elapsed: %.1f mins | ETA: %.1f mins\n",
+      i, n_perm, elapsed, eta
+    ))
+  }
+}
+
+p_value_peaks <- mean(perm_stats_peaks >= obs_stat_peaks, na.rm = TRUE)
+
+p_value_peaks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

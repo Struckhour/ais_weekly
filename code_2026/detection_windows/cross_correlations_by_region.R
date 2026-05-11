@@ -38,7 +38,7 @@ regions_include <- c("MAG", "PEI", "HAL", "BOF", "GOM")
 # exact region x species combinations to remove
 region_species_exclude <- tibble::tribble(
   ~region, ~species,
-  "MAG", "Carcinus maenas",
+  # "MAG", "Carcinus maenas",
 
 )
 
@@ -219,6 +219,40 @@ species_fit_selected <- pairwise_lags_selected %>%
   ) %>%
   mutate(
     species = factor(species, levels = species_order)
+  )
+
+manual_point <- tibble::tibble(
+  species = "Carcinus maenas (MAG removed)",
+  mean_cor = 0.462,
+  rmse = .892
+)
+
+ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
+  geom_point(size = 3) +
+  geom_text_repel(
+    size = 5,
+    box.padding = 0.4,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = Inf
+  ) +
+  geom_point(
+    data = manual_point,
+    size = 3
+  ) +
+  geom_text_repel(
+    data = manual_point,
+    size = 5,
+    box.padding = 0.4,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = Inf
+  ) +
+  theme_classic() +
+  labs(
+    x = "Mean pairwise correlation",
+    y = "Lag model RMSE (weeks)",
+    title = "Consistency of regional timing estimates across species"
   )
 
 ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
