@@ -313,3 +313,68 @@ crosscorr_results <- corr_df %>%
   ungroup()
 
 crosscorr_results
+
+
+library(dplyr)
+library(gt)
+
+crosscorr_table <- crosscorr_results %>%
+  mutate(
+    region = factor(region, levels = c("MAG","PEI","HAL","BOF","GOM")),
+    species = factor(species, levels = species_order)
+  ) %>%
+  arrange(species, region) %>%
+  mutate(
+    best_lag = ifelse(is.na(best_lag), "—", round(best_lag, 0)),
+    max_cor  = ifelse(is.na(max_cor),  "—", sprintf("%.2f", max_cor))
+  )
+
+gt_table <- crosscorr_table %>%
+  gt(groupname_col = "species") %>%
+  cols_label(
+    region = "Region",
+    best_lag = "Best lag (weeks)",
+    max_cor = "Max correlation"
+  ) %>%
+  cols_align(
+    align = "center",
+    c(best_lag, max_cor)
+  ) %>%
+  tab_header(
+    title = md("**Cross-correlation results by species and region**")
+  ) %>%
+  tab_source_note(
+    md("Lag represents the shift (in weeks) maximizing correlation between temperature and qPCR concentration.")
+  )
+
+crosscorr_table <- crosscorr_results %>%
+  mutate(
+    region = factor(region, levels = c("MAG","PEI","HAL","BOF","GOM")),
+    species = factor(species, levels = species_order),
+    max_cor_num = max_cor  # keep numeric copy
+  ) %>%
+  arrange(species, region) %>%
+  mutate(
+    best_lag = ifelse(is.na(best_lag), "—", round(best_lag, 0)),
+    max_cor  = ifelse(is.na(max_cor),  "—", sprintf("%.2f", max_cor))
+  )
+gt_table <- crosscorr_table %>%
+  gt(groupname_col = "species") %>%
+  cols_label(
+    region = "Region",
+    best_lag = "Best lag (weeks)",
+    max_cor = "Max correlation"
+  ) %>%
+  cols_align(
+    align = "center",
+    c(best_lag, max_cor)
+  ) %>%
+  data_color(
+    columns = max_cor_num,
+    fn = scales::col_numeric(
+      palette = c("grey90", "black"),
+      domain = c(0, 1)
+    )
+  ) %>%
+  cols_hide(max_cor_num)
+gt_table

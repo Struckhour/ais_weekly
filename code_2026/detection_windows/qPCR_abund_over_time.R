@@ -56,6 +56,8 @@ ggplot(
     method = "loess",
     se = TRUE,
     color = "black",
+    fill = "black",     # controls ribbon color
+    alpha = 0.35,        # controls transparency
     linewidth = 0.6,
     span = 0.35
   ) +
@@ -143,8 +145,8 @@ ggplot(
 df_weekly <- dfRawClean %>%
   filter(
     species != "Didemnum vexillum",
-    date >= as.Date("2023-07-01"),
-    date <= as.Date("2023-09-30")
+    date >= as.Date("2023-06-01"),
+    date <= as.Date("2023-12-30")
   ) %>%
   mutate(
     species = factor(species, levels = species_order),
@@ -161,8 +163,19 @@ ggplot(df_weekly, aes(x = week, y = mean_conc + 1,
                       color = region, group = region, alpha = alpha_flag)) +
   geom_point(size = 2) +
   geom_line() +
-
-  scale_alpha_manual(values = c(HAL = 1, other = 0.3)) +
+  geom_vline(
+    xintercept = as.Date("2023-07-20"),
+    color = "red",
+    linewidth = 1,
+    linetype = "dashed"
+  ) +
+  geom_vline(
+    xintercept = as.Date("2023-10-22"),
+    color = "red",
+    linewidth = 1,
+    linetype = "dashed"
+  ) +
+  scale_alpha_manual(values = c(HAL = 1, other = 0.2)) +
   scale_color_manual(values = hybrid_color) +
 
   scale_y_log10() +
