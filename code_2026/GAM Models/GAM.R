@@ -1091,7 +1091,7 @@ p_temp <- ggplot(
   geom_line(linewidth = 1) +
   facet_wrap(~ species, scales = "free_y") +
   labs(
-    x = "Temperature",
+    x = "Temperature (°C)",
     y = "Partial effect on qPCR concentration"
   ) +
   theme_classic()

@@ -12,16 +12,7 @@ metadata_clean <- metadata %>%
   filter(!is.na(salinity_ppt))         # remove rows with no salinity data
 
 
-ggplot(metadata_clean, aes(x = date, y = salinity_ppt)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "loess", se = TRUE, color = "black") +
-  facet_wrap(~ region, ncol = 1) +
-  theme_classic() +
-  labs(
-    title = "Salinity Over Time by Region",
-    x = "Date",
-    y = "Salinity (ppt)"
-  )
+
 
 ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region, shape = region)) +
   geom_point(alpha = 0.6, size = 2.5) +
@@ -40,23 +31,6 @@ ggplot(metadata_clean, aes(x = date, y = salinity_ppt, color = region, shape = r
     color = "Region",
     shape = "Region"
   )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #TEMPERATURE
@@ -90,6 +64,101 @@ ggplot(metadata_temp, aes(x = date, y = waterTemp_C, color = region, shape = reg
     color = "Region",
     shape = "Region"
   )
+
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+
+metadata_clean <- metadata %>%
+  mutate(
+    region = factor(region),
+    waterTemp_C = as.numeric(waterTemp_C)
+  )
+
+p_temp <- metadata_clean %>%
+  filter(!is.na(waterTemp_C)) %>%
+  ggplot(aes(x = date, y = waterTemp_C, color = region, shape = region)) +
+  geom_point(alpha = 0.6, size = 2.5) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.1) +
+  scale_color_manual(values = hybrid_color) +
+  scale_shape_manual(values = c(0, 2, 15, 17, 18)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+  labs(
+    title = "(a) Temperature",
+    x = NULL,
+    y = "Temp (°C)",
+    color = "Region",
+    shape = "Region"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),  # unchanged
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom"
+  )
+
+p_sal <- metadata_clean %>%
+  filter(!is.na(salinity_ppt)) %>%
+  ggplot(aes(x = date, y = salinity_ppt, color = region, shape = region)) +
+  geom_point(alpha = 0.6, size = 2.5) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.1) +
+  scale_color_manual(values = hybrid_color) +
+  scale_shape_manual(values = c(0, 2, 15, 17, 18)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+  labs(
+    title = "(b) Salinity",
+    x = "Date",
+    y = "Salinity (ppt)",
+    color = "Region",
+    shape = "Region"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0),  # unchanged
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
+# Combine + boost fonts globally
+(p_temp / p_sal) +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    axis.text = element_text(size = 12),      # tick labels (months, y values)
+    axis.title = element_text(size = 13),     # axis titles
+    legend.text = element_text(size = 12),    # legend labels
+    legend.title = element_text(size = 13)    # legend title
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

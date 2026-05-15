@@ -175,7 +175,7 @@ ggplot(df_weekly, aes(x = week, y = mean_conc + 1,
     linewidth = 1,
     linetype = "dashed"
   ) +
-  scale_alpha_manual(values = c(HAL = 1, other = 0.2)) +
+  scale_alpha_manual(values = c(HAL = 1, other = 0.3)) +
   scale_color_manual(values = hybrid_color) +
 
   scale_y_log10() +

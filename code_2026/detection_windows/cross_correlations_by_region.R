@@ -254,22 +254,22 @@ ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
     y = "Lag model RMSE (weeks)",
     title = "Consistency of regional timing estimates across species"
   )
-
-ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
-  geom_point(size = 3) +
-  geom_text_repel(
-    size = 5,
-    box.padding = 0.4,
-    point.padding = 0.3,
-    segment.color = "grey50",
-    max.overlaps = Inf
-  ) +
-  theme_classic() +
-  labs(
-    x = "Mean pairwise correlation",
-    y = "Lag model RMSE (weeks)",
-    title = "Consistency of regional timing estimates across species"
-  )
+#
+# ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
+#   geom_point(size = 3) +
+#   geom_text_repel(
+#     size = 5,
+#     box.padding = 0.4,
+#     point.padding = 0.3,
+#     segment.color = "grey50",
+#     max.overlaps = Inf
+#   ) +
+#   theme_classic() +
+#   labs(
+#     x = "Mean pairwise correlation",
+#     y = "Lag model RMSE (weeks)",
+#     title = "Consistency of regional timing estimates across species"
+#   )
 
 library(patchwork)
 
@@ -371,6 +371,64 @@ p_fitted <- pairwise_lags_fit_selected %>%
   )
 
 p_pairwise / p_fitted
+
+
+#############################
+#COMBINED PLOT
+#############################
+library(patchwork)
+
+p_consistency <- ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label = species)) +
+  geom_point(size = 3) +
+  geom_text_repel(
+    size = 5,
+    box.padding = 0.4,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = Inf,
+    nudge_x = ifelse(species_fit_selected$species == "Carcinus maenas", 0.02, 0),
+    nudge_y = ifelse(species_fit_selected$species == "Carcinus maenas", -0.8, 0)
+  ) +
+  geom_point(
+    data = manual_point,
+    size = 3
+  ) +
+  geom_text_repel(
+    data = manual_point,
+    size = 5,
+    box.padding = 0.4,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = Inf,
+    nudge_x = 0.02,
+    nudge_y = 0.8
+  ) +
+  theme_classic() +
+  labs(
+    x = "Mean pairwise correlation",
+    y = "Lag model RMSE (weeks)",
+    title = "(a) Consistency of regional timing estimates across species"
+  )
+
+p_pairwise <- p_pairwise +
+  labs(title = "(b) Pairwise optimal lags")
+
+p_fitted <- p_fitted +
+  labs(title = "(c) Difference between pairwise and reconciled lags")
+
+combined_plot <- p_consistency /
+  (p_pairwise + theme(legend.position = "right")) /
+  (p_fitted + theme(legend.position = "right")) +
+  plot_layout(
+    heights = c(1.8, 1.2, 1.2),
+    guides = "keep"
+  ) &
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0)
+  )
+
+combined_plot
+
 ###############################
 # 5. REGIONAL SUMMARY + RANKS
 ###############################
