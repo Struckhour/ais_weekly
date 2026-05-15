@@ -352,7 +352,7 @@ mapCols <- setNames(
 # 9. Log10‑transform concentration to stabilise variance -----------------------
 # ───────────────────────────────────────────────────────────────────────────────
 dfRawClean <- dfRawClean %>%
-  mutate(logConc = log(concentration + 1))
+  mutate(logConc = log10(concentration + 1))
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 10. Force numeric type on all environmental variables ------------------------
