@@ -42,7 +42,7 @@ df_plot <- dfRawClean %>%
     date <= as.Date("2024-08-30")
   )
 
-ggplot(
+p <- ggplot(
   df_plot,
   aes(
     x = date,
@@ -84,7 +84,7 @@ ggplot(
     panel.spacing = unit(0, "lines")
   )
 
-
+ggsave("manuscript_figures/figure_3.png", p, width = 11, height = 6, dpi = 300)
 ################
 # ALL REGIONS — raw concentrations over full sampling year
 ################

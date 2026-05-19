@@ -17,6 +17,16 @@ library(gt)
 # USER CONTROLS
 ###############################
 
+abbr_species <- function(x) {
+  sapply(strsplit(as.character(x), " "), function(parts) {
+    if (length(parts) >= 2) {
+      paste0(substr(parts[1], 1, 1), ". ", parts[2])
+    } else {
+      x
+    }
+  })
+}
+
 # species to include
 species_include <- species_order
 # species_include <- c(
@@ -74,7 +84,10 @@ qpcr_weekly_selected <- df_for_pipeline %>%
 # 3. PAIRWISE REGION CROSS-CORRELATIONS
 ###############################
 
-pairwise_lags_selected <- qpcr_weekly_selected %>%
+pairwise_lags_fit_selected <- pairwise_lags_selected %>%
+  mutate(
+    species_abbr = abbr_species(species)
+  ) %>%
   group_by(species) %>%
   group_modify(~{
 
@@ -196,6 +209,9 @@ library(ggrepel)
 
 
 species_fit_selected <- pairwise_lags_selected %>%
+  mutate(
+    species_abbr = abbr_species(species)
+  ) %>%
   left_join(
     region_positions_selected %>%
       rename(region1 = region, pos1 = position),
@@ -218,11 +234,15 @@ species_fit_selected <- pairwise_lags_selected %>%
     .groups = "drop"
   ) %>%
   mutate(
-    species = factor(species, levels = species_order)
+    species = factor(
+      abbr_species(species),
+      levels = abbr_species(species_order)
+    )
   )
 
+
 manual_point <- tibble::tibble(
-  species = "Carcinus maenas (MAG removed)",
+  species = "C. maenas (MAG removed)",
   mean_cor = 0.462,
   rmse = .892
 )
@@ -297,7 +317,10 @@ pairwise_lags_fit_selected <- pairwise_lags_selected %>%
     abs_error = abs(lag_error),
 
     pair = paste(region1, region2, sep = " vs "),
-    species = factor(species, levels = rev(species_order))
+    species = factor(
+      abbr_species(species),
+      levels = rev(abbr_species(species_order))
+    )
   )
 
 p_pairwise <- pairwise_lags_fit_selected %>%
@@ -383,11 +406,20 @@ p_consistency <- ggplot(species_fit_selected, aes(x = mean_cor, y = rmse, label 
   geom_text_repel(
     size = 5,
     box.padding = 0.4,
-    point.padding = 0.3,
+    point.padding = 0.6,
     segment.color = "grey50",
     max.overlaps = Inf,
-    nudge_x = ifelse(species_fit_selected$species == "Carcinus maenas", 0.02, 0),
-    nudge_y = ifelse(species_fit_selected$species == "Carcinus maenas", -0.8, 0)
+    nudge_x = dplyr::case_when(
+      species_fit_selected$species == "C. maenas" ~ 0.02,
+      species_fit_selected$species == "M. membranacea" ~ 0.05,
+      TRUE ~ 0
+    ),
+    nudge_y = dplyr::case_when(
+      species_fit_selected$species == "C. intestinalis" ~ 0.1,
+      species_fit_selected$species == "C. maenas" ~ -0.8,
+      species_fit_selected$species == "M. membranacea" ~ -0.55,
+      TRUE ~ 0
+    )
   ) +
   geom_point(
     data = manual_point,
@@ -428,6 +460,34 @@ combined_plot <- p_consistency /
   )
 
 combined_plot
+ggsave("manuscript_figures/figure_5.png", combined_plot, width = 10, height = 10, dpi = 300)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ###############################
 # 5. REGIONAL SUMMARY + RANKS
@@ -717,8 +777,8 @@ plot_alignment_all_species <- function() {
     )
 }
 
-plot_alignment_all_species()
-
+p <- plot_alignment_all_species()
+ggsave("manuscript_figures/figure_4.png", p, width = 10, height = 10, dpi = 300)
 
 ##############################
 #PERMUTATION

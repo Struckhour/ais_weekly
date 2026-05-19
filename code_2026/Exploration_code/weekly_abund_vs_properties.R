@@ -483,7 +483,7 @@ plot_halifax_raw_qpcr_env <- function(
       inherit.aes = FALSE,
       linetype = "dotted",
       color = "grey35",
-      linewidth = 0.5
+      linewidth = 0.8
     ) +
 
     geom_smooth(
@@ -541,7 +541,7 @@ plot_halifax_raw_qpcr_env <- function(
       inherit.aes = FALSE,
       linetype = "dotted",
       color = "grey35",
-      linewidth = 0.5
+      linewidth = 0.8
     ) +
 
     geom_line(
@@ -1132,6 +1132,7 @@ final_plot <-
   )
 
 final_plot
+ggsave("manuscript_figures/figure_10.png", final_plot, width = 9, height = 9, dpi = 300)
 
 
 

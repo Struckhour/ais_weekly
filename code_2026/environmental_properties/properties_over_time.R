@@ -121,7 +121,7 @@ p_sal <- metadata_clean %>%
   )
 
 # Combine + boost fonts globally
-(p_temp / p_sal) +
+p <- (p_temp / p_sal) +
   plot_layout(guides = "collect") &
   theme(
     legend.position = "bottom",
@@ -132,7 +132,7 @@ p_sal <- metadata_clean %>%
   )
 
 
-
+ggsave("manuscript_figures/figure_7.png", p, width = 8, height = 6, dpi = 300)
 
 
 

@@ -1030,6 +1030,7 @@ p_season_smooths <- ggplot(
   )
 
 p_season_smooths
+ggsave("manuscript_figures/figure_8.png", p_season_smooths, width = 8, height = 6, dpi = 300)
 
 
 temp_effect_df <- purrr::imap_dfr(gam_fits, function(x, sp) {
@@ -1097,3 +1098,4 @@ p_temp <- ggplot(
   theme_classic()
 
 p_temp
+ggsave("manuscript_figures/figure_9.png", p_temp, width = 8, height = 6, dpi = 300)

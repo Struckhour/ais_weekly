@@ -433,3 +433,4 @@ final_plot <- wrap_plots(
   theme(legend.position = "right")
 
 final_plot
+ggsave("manuscript_figures/figure_11_before_edit.png", final_plot, width = 10, height = 10, dpi = 300)

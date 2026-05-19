@@ -613,11 +613,13 @@ pairwise_results <- df_pos %>%
 #COMPARISON WITH ZEROES
 ###################
 
-ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
+p <- ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
   geom_boxplot(outlier.alpha = 0.2) +
   facet_wrap(~ species, scales = "free_y") +
   scale_fill_manual(values = hybrid_color) +
   theme_classic()
+
+ggsave("manuscript_figures/figure_2.png", p, width = 8, height = 6, dpi = 300)
 
 ggplot(df_full, aes(x = region, y = logConc, fill = region)) +
   geom_violin(trim = FALSE, alpha = 0.8) +
