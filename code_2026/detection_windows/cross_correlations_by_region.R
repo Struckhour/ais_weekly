@@ -567,7 +567,10 @@ ggplot(lag_timeline_df, aes(x = position_plot, y = y_pos, color = region, shape 
     breaks = species_breaks,
     labels = levels(lag_timeline_df$species)
   ) +
-  scale_color_manual(values = hybrid_color, drop = FALSE) +
+  scale_fill_manual(
+    values = hybrid_color,
+    drop = FALSE
+  ) +
   scale_shape_manual(values = c(
     MAG = 16,
     PEI = 17,
@@ -586,6 +589,14 @@ ggplot(lag_timeline_df, aes(x = position_plot, y = y_pos, color = region, shape 
     shape = "Region"
   )
 
+hybrid_color <- c(
+  MAG = "#00A08A",
+  PEI = "#446455",
+  HAL = "#CCAA4F",
+  BOF = "#5BBCD6",
+  GOM = "#fb8072"
+)
+
 plot_alignment_all_species <- function() {
 
   library(patchwork)
@@ -598,18 +609,6 @@ plot_alignment_all_species <- function() {
     HAL = 15,
     BOF = 18,
     GOM = 8
-  )
-
-  legend_guides <- guides(
-    color = guide_legend(
-      override.aes = list(
-        linetype = 1,
-        shape = region_shapes[region_levels],
-        linewidth = 0.8,
-        size = 3
-      )
-    ),
-    shape = "none"
   )
 
   plot_dat <- qpcr_weekly_selected %>%
@@ -639,7 +638,12 @@ plot_alignment_all_species <- function() {
       species = factor(species, levels = species_order),
       region = factor(region, levels = rev(region_levels))
     ) %>%
-    filter(!is.na(species), !is.na(region), !is.na(position))
+    filter(
+      !is.na(species),
+      !is.na(region),
+      !is.na(position),
+      !is.na(value_filled_norm)
+    )
 
   plot_long_line <- plot_dat %>%
     select(species, region, week, week_shifted, value_filled_norm) %>%
@@ -664,12 +668,9 @@ plot_alignment_all_species <- function() {
 
     p <- plot_long_line %>%
       filter(alignment == alignment_name) %>%
-      ggplot(aes(x = plot_week, color = region, shape = region)) +
+      ggplot(aes(x = plot_week, y = value_filled_norm, color = region)) +
       geom_smooth(
-        aes(
-          y = value_filled_norm,
-          group = region
-        ),
+        aes(group = region),
         method = "loess",
         formula = y ~ x,
         span = 0.3,
@@ -679,27 +680,22 @@ plot_alignment_all_species <- function() {
       ) +
       facet_grid(. ~ species) +
       scale_color_manual(
-        values = hybrid_color[region_levels],
-        drop = FALSE
-      ) +
-      scale_shape_manual(
-        values = region_shapes[region_levels],
-        drop = FALSE
+        values = hybrid_color,
+        breaks = rev(region_levels),
+        drop = FALSE,
+        name = "Region"
       ) +
       scale_x_continuous(
         breaks = seq(0, 52, by = 13),
         limits = c(1, 52)
       ) +
-      legend_guides +
       theme_classic() +
       theme(
         panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8)
       ) +
       labs(
         x = NULL,
-        y = y_label,
-        color = "Region",
-        shape = "Region"
+        y = y_label
       )
 
     if (!show_strips) {
@@ -736,14 +732,17 @@ plot_alignment_all_species <- function() {
     geom_point(size = 3, alpha = 0.95) +
     facet_grid(. ~ species) +
     scale_color_manual(
-      values = hybrid_color[region_levels],
-      drop = FALSE
+      values = hybrid_color,
+      breaks = rev(region_levels),
+      drop = FALSE,
+      name = "Region"
     ) +
     scale_shape_manual(
-      values = region_shapes[region_levels],
-      drop = FALSE
+      values = region_shapes,
+      breaks = rev(region_levels),
+      drop = FALSE,
+      name = "Region"
     ) +
-    legend_guides +
     theme_classic() +
     theme(
       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
@@ -752,9 +751,7 @@ plot_alignment_all_species <- function() {
     ) +
     labs(
       x = NULL,
-      y = "Regional\nlag",
-      color = "Region",
-      shape = "Region"
+      y = "Regional\nlag"
     )
 
   p_after <- make_curve_plot(
@@ -775,6 +772,7 @@ plot_alignment_all_species <- function() {
 }
 
 p <- plot_alignment_all_species()
+p
 ggsave("manuscript_figures/figure_4.png", p, width = 10, height = 10, dpi = 300)
 
 ##############################
