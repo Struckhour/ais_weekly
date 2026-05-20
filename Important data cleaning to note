@@ -1,8 +1,0 @@
-1) Halifax Didemnum vexillum outlier (qPCR) was removed
-2) Weird pH (three values, two were negative and one was +12) from Halifax was replaced with NA
-3) We used concentration (log copies/L) instead of detection rates because detection rates were often maxed out at 100% across seasons
-4) Probably something in discussion about low temperatures and dormancy for those 100% detection rates (warm winter waters?)
-5) how we wrap the yearly data (or not), like whether we keep it ordered in time or not, matters and needs to be addressed
-6) removed one temp value from PEI on Nov 30 2023. It is the Salinity value.(27.5)
-7) Removed Causeway from GOM
-8) Adjusted/corrected names of BOF samples from Blank to ABC for many of them (did this manually and named a new file)

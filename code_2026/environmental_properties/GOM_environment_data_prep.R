@@ -1,3 +1,8 @@
+#This code was for preparing and exploring the GOM environmental data
+##########
+########
+######
+
 deer_sst <- read.csv(
   "./data/Deer_Isle_SST.csv",
   row.names = 1,
