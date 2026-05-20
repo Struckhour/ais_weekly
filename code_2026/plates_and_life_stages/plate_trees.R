@@ -993,6 +993,33 @@ best_by_lag %>%
   )
 
 
+library(dplyr)
+library(writexl)
+
+best_by_lag %>%
+  group_by(species) %>%
+  mutate(
+    species_display = if_else(row_number() == 1, as.character(species), "")
+  ) %>%
+  ungroup() %>%
+  select(
+    species = species_display,
+    lag,
+    model,
+    rmse,
+    rsq,
+    n
+  ) %>%
+  rename(
+    Species = species,
+    Lag = lag,
+    `Best model` = model,
+    RMSE = rmse,
+    `R²` = rsq,
+    N = n
+  ) %>%
+  writexl::write_xlsx("best_regression_tree_model_by_lag.xlsx")
+
 lag_results_all %>%
   group_by(species, lag) %>%
   mutate(is_best = rmse == min(rmse)) %>%

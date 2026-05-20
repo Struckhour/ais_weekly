@@ -158,3 +158,36 @@ combined_circular_results %>%
     column_labels.padding = gt::px(2),
     heading.padding = gt::px(2)
   )
+
+
+library(dplyr)
+library(writexl)
+
+combined_circular_results %>%
+  arrange(species, region) %>%
+  group_by(species) %>%
+  mutate(
+    species_display = if_else(
+      row_number() == 1,
+      as.character(species),
+      ""
+    )
+  ) %>%
+  ungroup() %>%
+  select(
+    species = species_display,
+    region,
+    Temperature_best_lag,
+    Temperature_max_cor,
+    Salinity_best_lag,
+    Salinity_max_cor
+  ) %>%
+  rename(
+    Species = species,
+    Region = region,
+    `Temperature lag` = Temperature_best_lag,
+    `Temperature r` = Temperature_max_cor,
+    `Salinity lag` = Salinity_best_lag,
+    `Salinity r` = Salinity_max_cor
+  ) %>%
+  writexl::write_xlsx("combined_circular_results.xlsx")

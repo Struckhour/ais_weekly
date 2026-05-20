@@ -196,23 +196,7 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
   df <- df %>%
     dplyr::arrange(month)
   win <- calc_window_simple(df, threshold = 0.9)
-  # calculate optimized window
-  # win <- calc_window_optimized(
-  #   df,
-  #   value_col = "value",
-  #   optimize = "mean_diff",
-  #   min_width = 2,
-  #   max_width = 6,
-  #   must_include_peak = TRUE,
-  #   tie_break = "wider"
-  # )
-  # win <- calc_window_plateaus(
-  #   plot_df,
-  #   min_width = 1,
-  #   max_width = 11,
-  #   width_weight = "none",
-  #   edge_scale = "inside_high"
-  # )
+
 
   # assign wedge status based on selected window
   df <- df %>%
@@ -320,20 +304,8 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 }
 
 
-# df_sub <- df %>%
-#   dplyr::filter(
-#     species == "Membranipora membranacea",
-#     region == "MAG"
-#   )
-#
-# plot_df <- df_sub %>%
-#   prep_monthly_signal() %>%
-#   interp_monthly_circular() %>%
-#   classify_months(threshold = 0.75)
-#
-# plot_monthly_wheel(plot_df, "Membranipora membranacea – MAG")
 
-
+#CREATE FOLDER FOR STORING NEW FIGURES
 if (!dir.exists("abundance_wheels_90_dark")) {
   dir.create("abundance_wheels_90_dark")
 }
@@ -367,7 +339,7 @@ for (sp in all_species) {
       # title = paste(sp, "-", reg)
     )
 
-    # safe filename
+    # safe filename -- be sure to update the folder name for new folders
     file_name <- paste0(
       "abundance_wheels/",
       gsub(" ", "_", sp),
@@ -391,7 +363,7 @@ for (sp in all_species) {
 #save window wheels instead of threshold wheels
 ##################################
 
-
+#CREATE NEW FOLDER FOR STORING FIGURES
 if (!dir.exists("abundance_plateau_wheels")) {
   dir.create("abundance_plateau_wheels")
 }
@@ -869,18 +841,12 @@ test_window_wilcox <- function(df_raw, species, region, window_res) {
 
 
 wilcox_result <- test_window_wilcox(dfRawClean, selected_species, selected_region, window_res)
-wilcox_result
 
-library(dplyr)
-library(purrr)
-library(tidyr)
+
 
 all_species <- sort(unique(dfRawClean$species))
 all_regions <- c("MAG", "PEI", "HAL", "BOF", "GOM")
-library(dplyr)
-library(purrr)
-library(tidyr)
-library(tibble)
+
 
 collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) {
 
@@ -972,34 +938,8 @@ collect_window_wilcox_results <- function(df_monthly, df_raw, threshold = 0.75) 
   results
 }
 
-dfRawClean_sample_mean <- dfRawClean %>%
-  dplyr::group_by(
-    materialSampleID,
-    region,
-    species,
-    date,
-    month
-  ) %>%
-  dplyr::summarise(
-    concentration = mean(concentration, na.rm = TRUE),
-    logConc = log(mean(concentration, na.rm = TRUE) + 1),
-    detected = as.integer(concentration > 0),
-    .groups = "drop"
-  )
 
-dfRawClean_date_mean <- dfRawClean %>%
-  dplyr::group_by(
-    region,
-    species,
-    date,
-    month
-  ) %>%
-  dplyr::summarise(
-    concentration = mean(concentration, na.rm = TRUE),
-    logConc = log(mean(concentration, na.rm = TRUE) + 1),
-    detected = as.integer(concentration > 0),
-    .groups = "drop"
-  )
+
 
 
 wilcox_results_df <- collect_window_wilcox_results(

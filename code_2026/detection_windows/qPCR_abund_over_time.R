@@ -83,10 +83,16 @@ p <- ggplot(
     panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
     panel.spacing = unit(0, "lines")
   )
-
+p
 ggsave("manuscript_figures/figure_3.png", p, width = 11, height = 6, dpi = 300)
+
+
+
+
+
+
 ################
-# ALL REGIONS — raw concentrations over full sampling year
+# ALL REGIONS —Monthly raw concentrations over full sampling year
 ################
 
 df_plot <- dfRawClean %>%

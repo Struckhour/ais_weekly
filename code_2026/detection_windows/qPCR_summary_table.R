@@ -187,6 +187,49 @@ summary_species_final %>%
     table.width = gt::pct(90)
   )
 
+
+library(dplyr)
+library(writexl)
+
+summary_species_final %>%
+  select(-n_samples) %>%
+  rename(n_samples = n_obs) %>%
+  select(
+    species,
+    n_regions,
+    n_samples,
+    n_sample_detected,
+    sample_detection_rate,
+    n_reps,
+    n_pos_reps,
+    rep_detection_rate,
+    mean_log_conc,
+    median_log_conc,
+    max_log_conc,
+    sd_log_conc,
+    mean_monthly_sd,
+    mean_weekly_sd,
+    mean_sd_within_samples
+  ) %>%
+  rename(
+    Species = species,
+    `N regions` = n_regions,
+    `N samples` = n_samples,
+    `N sample detections` = n_sample_detected,
+    `Sample detection rate` = sample_detection_rate,
+    `N replicates` = n_reps,
+    `N replicate detections` = n_pos_reps,
+    `Replicate detection rate` = rep_detection_rate,
+    `Mean log conc. (positive only)` = mean_log_conc,
+    `Median log conc. (positive only)` = median_log_conc,
+    `Max log conc.` = max_log_conc,
+    `Annual SD` = sd_log_conc,
+    `Monthly SD` = mean_monthly_sd,
+    `Weekly SD` = mean_weekly_sd,
+    `Within-sample SD` = mean_sd_within_samples
+  ) %>%
+  writexl::write_xlsx("summary_species_final.xlsx")
+
 #####################
 #new version of region with samples x species
 #####################
@@ -376,6 +419,48 @@ summary_region_final %>%
   )
 
 
+library(dplyr)
+library(writexl)
+
+summary_region_final %>%
+  select(-n_samples) %>%
+  rename(n_samples = n_obs) %>%
+  select(
+    region,
+    n_species,
+    n_samples,
+    n_sample_detected,
+    sample_detection_rate,
+    n_reps,
+    n_pos_reps,
+    rep_detection_rate,
+    mean_log_conc,
+    median_log_conc,
+    max_log_conc,
+    sd_log_conc,
+    mean_monthly_sd,
+    mean_weekly_sd,
+    mean_sd_within_samples
+  ) %>%
+  rename(
+    Region = region,
+    `N species` = n_species,
+    `N samples` = n_samples,
+    `N sample detections` = n_sample_detected,
+    `Sample detection rate` = sample_detection_rate,
+    `N replicates` = n_reps,
+    `N replicate detections` = n_pos_reps,
+    `Replicate detection rate` = rep_detection_rate,
+    `Mean log conc. (positive only)` = mean_log_conc,
+    `Median log conc. (positive only)` = median_log_conc,
+    `Max log conc.` = max_log_conc,
+    `Annual SD` = sd_log_conc,
+    `Monthly SD` = mean_monthly_sd,
+    `Weekly SD` = mean_weekly_sd,
+    `Within-sample SD` = mean_sd_within_samples
+  ) %>%
+  writexl::write_xlsx("summary_region_final.xlsx")
+
 
 ###########################
 #all species x region
@@ -561,7 +646,45 @@ summary_sr_final_clean %>%
   )
 
 
+library(dplyr)
+library(writexl)
 
+summary_sr_final_clean %>%
+  select(-n_samples) %>%
+  rename(n_samples = n_obs) %>%
+  select(
+    species_display,
+    region,
+    n_samples,
+    n_sample_detected,
+    sample_detection_rate,
+    n_reps,
+    n_pos_reps,
+    rep_detection_rate,
+    mean_log_conc,
+    max_log_conc,
+    sd_log_conc,
+    mean_monthly_sd,
+    mean_weekly_sd,
+    mean_sd_within_samples
+  ) %>%
+  rename(
+    Species = species_display,
+    Region = region,
+    `N samples` = n_samples,
+    `N sample detections` = n_sample_detected,
+    `Sample detection rate` = sample_detection_rate,
+    `N replicates` = n_reps,
+    `N replicate detections` = n_pos_reps,
+    `Replicate detection rate` = rep_detection_rate,
+    `Mean log conc. (positive only)` = mean_log_conc,
+    `Max log conc.` = max_log_conc,
+    `Annual SD` = sd_log_conc,
+    `Monthly SD` = mean_monthly_sd,
+    `Weekly SD` = mean_weekly_sd,
+    `Within-sample SD` = mean_sd_within_samples
+  ) %>%
+  writexl::write_xlsx("summary_species_region_final.xlsx")
 
 
 
