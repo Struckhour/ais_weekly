@@ -224,7 +224,9 @@ ggplot(df_weekly, aes(x = week, y = mean_conc + 1,
 
 
 
-
+#################
+#WEEKLY SAMPLES SCATTER PLOT FOR SUMMER 2023
+#################
 # Prepare data: add "GOM", filter dates, and add first-letter month column
 dfRaw_window <- dfRawClean %>%
   # filter(date >= as.Date("2013-06-01") & date <= as.Date("2024-10-31")) %>%
@@ -257,9 +259,7 @@ ggplot(dfRaw_window, aes(x = date, y = concentration + 1, color = region)) +
 ###########################
 #MONTHLY COMPARISON OF NORMALIZED CONCENTRATION AND DETECTION RATES
 ###########################
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+
 
 df_plot <- dfMonths %>%
   select(region, species, month_reordered, normMeanLogConc, det_rate) %>%
@@ -365,7 +365,7 @@ ggplot(df_plot, aes(x = month_reordered, y = value, group = metric, color = metr
 
 
 ########################
-#ALL THREE
+#ALL THREE: DETECTION RATES (WITH AND WITHOUT ZEROES) AND EDNA CONCENTRATION
 ########################
 
 df_plot <- dfMonths %>%
