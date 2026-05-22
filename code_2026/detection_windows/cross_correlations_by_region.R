@@ -24,6 +24,69 @@ abbr_species <- function(x) {
   })
 }
 
+circular_lag_profile <- function(temp, qpcr) {
+  n <- length(temp)
+
+  temp_filled <- fill_circular_series(temp)
+  qpcr_filled <- fill_circular_series(qpcr)
+
+  temp_z <- zscore(temp_filled)
+  qpcr_z <- zscore(qpcr_filled)
+
+  if (all(is.na(temp_z)) || all(is.na(qpcr_z))) {
+    return(tibble(lag = integer(), cor = numeric()))
+  }
+
+  lags <- 0:(n - 1)
+  cors <- sapply(lags, function(k) {
+    # shift temp forward by k weeks relative to qpcr
+    # so positive lag means temp occurs earlier / leads
+    cor(circ_shift(temp_z, k), qpcr_z, use = "complete.obs")
+  })
+
+  tibble(
+    lag_raw = lags,
+    cor = cors
+  ) %>%
+    mutate(
+      lag = ifelse(lag_raw <= n / 2, lag_raw, lag_raw - n)
+    ) %>%
+    select(lag, cor) %>%
+    arrange(lag)
+}
+
+# linear interpolation, leaving ends extended
+fill_circular_series <- function(x) {
+  idx <- which(is.finite(x))
+
+  if (length(idx) == 0) return(rep(NA_real_, length(x)))
+  if (length(idx) == 1) return(rep(x[idx], length(x)))
+
+  approx(
+    x = idx,
+    y = x[idx],
+    xout = seq_along(x),
+    method = "linear",
+    rule = 2
+  )$y
+}
+
+
+# z-score helper
+zscore <- function(x) {
+  s <- sd(x, na.rm = TRUE)
+  m <- mean(x, na.rm = TRUE)
+  if (!is.finite(s) || s == 0) return(rep(NA_real_, length(x)))
+  (x - m) / s
+}
+
+# circular shift to the right by k
+circ_shift <- function(x, k) {
+  n <- length(x)
+  k <- k %% n
+  if (k == 0) return(x)
+  c(tail(x, k), head(x, n - k))
+}
 # species to include
 species_include <- species_order
 # species_include <- c(
@@ -80,6 +143,67 @@ qpcr_weekly_selected <- df_for_pipeline %>%
 ###############################
 # 3. PAIRWISE REGION CROSS-CORRELATIONS
 ###############################
+
+pairwise_lags_selected <- qpcr_weekly_selected %>%
+  group_by(species) %>%
+  group_modify(~{
+
+    dat <- .x
+    regs <- sort(unique(as.character(dat$region)))
+
+    if (length(regs) < 2) {
+      return(tibble(
+        region1 = character(),
+        region2 = character(),
+        lag = numeric(),
+        cor = numeric()
+      ))
+    }
+
+    region_pairs <- combn(regs, 2, simplify = FALSE)
+
+    map_dfr(region_pairs, function(pair) {
+
+      r1 <- pair[1]
+      r2 <- pair[2]
+
+      curve1 <- dat %>%
+        filter(as.character(region) == r1) %>%
+        arrange(week) %>%
+        pull(value)
+
+      curve2 <- dat %>%
+        filter(as.character(region) == r2) %>%
+        arrange(week) %>%
+        pull(value)
+
+      prof <- circular_lag_profile(curve1, curve2)
+
+      if (nrow(prof) == 0 || all(is.na(prof$cor))) {
+        return(tibble(
+          region1 = r1,
+          region2 = r2,
+          lag = NA_real_,
+          cor = NA_real_
+        ))
+      }
+
+      best_i <- which.max(prof$cor)
+
+      tibble(
+        region1 = r1,
+        region2 = r2,
+        lag = prof$lag[best_i],
+        cor = prof$cor[best_i]
+      )
+    })
+  }) %>%
+  ungroup() %>%
+  mutate(
+    species_abbr = abbr_species(species)
+  )
+
+print(pairwise_lags_selected, n = Inf)
 
 pairwise_lags_fit_selected <- pairwise_lags_selected %>%
   mutate(
