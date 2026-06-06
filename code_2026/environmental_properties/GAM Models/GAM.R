@@ -140,14 +140,43 @@ fit_gam_models <- function(sp) {
 
   if (nrow(df_sp) < 30) return(NULL)
 
+  # one shared seasonal smooth
   m_season <- gam(
-    scaleLogConc ~ s(week_of_year, bs = "cc"),
+    scaleLogConc ~
+      s(week_of_year, bs = "cc"),
     data = df_sp,
     method = "REML",
     knots = list(week_of_year = c(0.5, 52.5))
   )
 
-  m_temp <- gam(
+  m_season_temp <- gam(
+    scaleLogConc ~
+      s(week_of_year, bs = "cc") +
+      s(meanTemp),
+    data = df_sp,
+    method = "REML",
+    knots = list(week_of_year = c(0.5, 52.5))
+  )
+
+  m_season_sal <- gam(
+    scaleLogConc ~
+      s(week_of_year, bs = "cc") +
+      s(meanSal),
+    data = df_sp,
+    method = "REML",
+    knots = list(week_of_year = c(0.5, 52.5))
+  )
+
+  m_region <- gam(
+    scaleLogConc ~
+      s(week_of_year, by = region, bs = "cc") +
+      region,
+    data = df_sp,
+    method = "REML",
+    knots = list(week_of_year = c(0.5, 52.5))
+  )
+
+  m_region_temp <- gam(
     scaleLogConc ~
       s(week_of_year, by = region, bs = "cc") +
       s(meanTemp) +
@@ -157,7 +186,7 @@ fit_gam_models <- function(sp) {
     knots = list(week_of_year = c(0.5, 52.5))
   )
 
-  m_temp_sal <- gam(
+  m_region_temp_sal <- gam(
     scaleLogConc ~
       s(week_of_year, by = region, bs = "cc") +
       s(meanTemp) +
@@ -172,8 +201,11 @@ fit_gam_models <- function(sp) {
     species = sp,
     data = df_sp,
     season = m_season,
-    temp = m_temp,
-    temp_sal = m_temp_sal
+    season_temp = m_season_temp,
+    season_sal = m_season_sal,
+    region = m_region,
+    region_temp = m_region_temp,
+    region_temp_sal = m_region_temp_sal
   )
 }
 
@@ -186,22 +218,45 @@ gam_model_summary <- imap_dfr(gam_fits, function(x, sp) {
 
   tibble(
     species = sp,
-    model = c("season", "season_temp", "season_temp_sal"),
+    model = c(
+      "season",
+      "season_temp",
+      "season_sal",
+      "region_season",
+      "region_season_temp",
+      "region_season_temp_sal"
+    ),
     n = nrow(x$data),
     deviance_explained = c(
       summary(x$season)$dev.expl,
-      summary(x$temp)$dev.expl,
-      summary(x$temp_sal)$dev.expl
+      summary(x$season_temp)$dev.expl,
+      summary(x$season_sal)$dev.expl,
+      summary(x$region)$dev.expl,
+      summary(x$region_temp)$dev.expl,
+      summary(x$region_temp_sal)$dev.expl
     ),
     AIC = c(
       AIC(x$season),
-      AIC(x$temp),
-      AIC(x$temp_sal)
+      AIC(x$season_temp),
+      AIC(x$season_sal),
+      AIC(x$region),
+      AIC(x$region_temp),
+      AIC(x$region_temp_sal)
     )
   )
 })
 
 gam_model_summary
+gam_model_summary_wide <- gam_model_summary %>%
+  select(species, n, model, deviance_explained) %>%
+  tidyr::pivot_wider(
+    names_from = model,
+    values_from = deviance_explained
+  )
+write_xlsx(
+  gam_model_summary_wide,
+  "gam_model_summary_wide.xlsx"
+)
 
 
 extract_smooth_table <- function(fit, species_name, model_name) {
@@ -224,8 +279,11 @@ extract_smooth_table <- function(fit, species_name, model_name) {
 gam_smooth_summary <- imap_dfr(gam_fits, function(x, sp) {
   bind_rows(
     extract_smooth_table(x$season, sp, "season"),
-    extract_smooth_table(x$temp, sp, "season_temp"),
-    extract_smooth_table(x$temp_sal, sp, "season_temp_sal")
+    extract_smooth_table(x$season_temp, sp, "season_temp"),
+    extract_smooth_table(x$season_sal, sp, "season_sal"),
+    extract_smooth_table(x$region, sp, "region_season"),
+    extract_smooth_table(x$region_temp, sp, "region_season_temp"),
+    extract_smooth_table(x$region_temp_sal, sp, "region_season_temp_sal")
   )
 })
 
@@ -233,9 +291,14 @@ gam_model_summary %>%
   arrange(species, AIC)
 
 printable_summary_smooth <- gam_smooth_summary %>%
-  filter(model == "season_temp_sal") %>%
+  filter(model == "region_season_temp_sal") %>%
   arrange(species, term)
-print(printable_summary_smooth, n=Inf, width=Inf)
+
+print(printable_summary_smooth, n = Inf, width = Inf)
+write_xlsx(
+  printable_summary_smooth,
+  "gam_smooth_summary.xlsx"
+)
 
 
 season_smooth_df <- purrr::imap_dfr(gam_fits, function(x, sp) {

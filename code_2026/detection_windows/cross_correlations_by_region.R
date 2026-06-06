@@ -629,6 +629,11 @@ region_position_summary_selected <- region_positions_selected %>%
 
 print(region_position_summary_selected)
 
+write_xlsx(
+  region_position_summary_selected,
+  "regional_position_summary.xlsx"
+)
+
 region_position_summary_selected %>%
   rename(
     `Mean adjusted position (weeks)` = mean_position,

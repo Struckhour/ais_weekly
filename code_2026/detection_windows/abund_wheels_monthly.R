@@ -306,58 +306,58 @@ plot_monthly_wheel_window <- function(df, region, title = NULL) {
 
 
 #CREATE FOLDER FOR STORING NEW FIGURES
-if (!dir.exists("abundance_wheels_90_dark")) {
-  dir.create("abundance_wheels_90_dark")
-}
+# if (!dir.exists("abundance_wheels_90_dark")) {
+#   dir.create("abundance_wheels_90_dark")
+# }
 
 
-all_species <- unique(df$species)
-all_regions <- unique(df$region)
-
-for (sp in all_species) {
-  for (reg in all_regions) {
-
-    df_sub <- df %>%
-      dplyr::filter(
-        species == sp,
-        region == reg
-      )
-
-    # skip empty combos
-    if (nrow(df_sub) == 0) next
-
-    # build plot data
-    plot_df <- df_sub %>%
-      prep_monthly_signal() %>%
-      interp_monthly_circular() %>%
-      classify_months(threshold = 0.75)
-
-    # generate plot
-    p <- plot_monthly_wheel(
-      df = plot_df,
-      region = reg
-      # title = paste(sp, "-", reg)
-    )
-
-    # safe filename -- be sure to update the folder name for new folders
-    file_name <- paste0(
-      "abundance_wheels/",
-      gsub(" ", "_", sp),
-      "__",
-      gsub(" ", "_", reg),
-      ".png"
-    )
-
-    # save
-    ggsave(
-      filename = file_name,
-      plot = p,
-      width = 6,
-      height = 6,
-      dpi = 300
-    )
-  }
-}
+# all_species <- unique(df$species)
+# all_regions <- unique(df$region)
+#
+# for (sp in all_species) {
+#   for (reg in all_regions) {
+#
+#     df_sub <- df %>%
+#       dplyr::filter(
+#         species == sp,
+#         region == reg
+#       )
+#
+#     # skip empty combos
+#     if (nrow(df_sub) == 0) next
+#
+#     # build plot data
+#     plot_df <- df_sub %>%
+#       prep_monthly_signal() %>%
+#       interp_monthly_circular() %>%
+#       classify_months(threshold = 0.75)
+#
+#     # generate plot
+#     p <- plot_monthly_wheel(
+#       df = plot_df,
+#       region = reg
+#       # title = paste(sp, "-", reg)
+#     )
+#
+#     # safe filename -- be sure to update the folder name for new folders
+#     file_name <- paste0(
+#       "abundance_wheels/",
+#       gsub(" ", "_", sp),
+#       "__",
+#       gsub(" ", "_", reg),
+#       ".png"
+#     )
+#
+#     # save
+#     ggsave(
+#       filename = file_name,
+#       plot = p,
+#       width = 6,
+#       height = 6,
+#       dpi = 300
+#     )
+#   }
+# }
 
 ##################################
 #save window wheels instead of threshold wheels

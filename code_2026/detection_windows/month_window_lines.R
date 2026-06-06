@@ -241,7 +241,7 @@ p <- ggplot(window_plot_df2) +
     size = 3,
     color = "grey10"
   )
-
+p
 ggsave("manuscript_figures/figure_C1(Appendix C).png", p, width = 9, height = 9, dpi = 300)
 
 avg_ps_species <- window_plot_df2 %>%
@@ -385,6 +385,46 @@ region_center_summary %>%
     title = "Regional timing ranks"
   ) %>%
   cols_align(align = "center", -region)
+
+
+species_relative_positions <- window_center_offsets %>%
+  dplyr::select(region, species, relative_month) %>%
+  tidyr::pivot_wider(
+    names_from = species,
+    values_from = relative_month
+  )
+
+region_center_summary <- window_center_offsets %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(
+    mean_relative_month = mean(relative_month, na.rm = TRUE),
+    sd_relative_month = sd(relative_month, na.rm = TRUE),
+    n_species = dplyr::n_distinct(species),
+    .groups = "drop"
+  ) %>%
+  dplyr::left_join(species_relative_positions, by = "region") %>%
+  dplyr::mutate(
+    rank = rank(mean_relative_month, ties.method = "first")
+  ) %>%
+  dplyr::arrange(rank)
+
+region_center_summary %>%
+  gt() %>%
+  fmt_number(
+    columns = where(is.numeric),
+    decimals = 2
+  ) %>%
+  tab_header(
+    title = "Regional timing ranks"
+  ) %>%
+  cols_align(align = "center", -region)
+
+library(writexl)
+
+write_xlsx(
+  region_center_summary,
+  "regional_ODW_timing.xlsx"
+)
 
 obs_stat_centers <- region_center_summary %>%
   dplyr::summarise(
@@ -773,7 +813,10 @@ species_clustering_table %>%
   gt::fmt_number(columns = clustering_R, decimals = 2) %>%
   gt::tab_header(title = "Clustering of Window Centers Across Regions")
 
-
+write_xlsx(
+  species_clustering_table,
+  "clustering_table.xlsx"
+)
 
 
 
