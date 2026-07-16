@@ -1037,3 +1037,218 @@ p_value
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#NEW SECTION FOR BEFORE AND AFTER R VALUES
+
+
+# Correlation between two circular weekly series at a specified lag
+circular_cor_at_lag <- function(x, y, lag) {
+
+  x_filled <- fill_circular_series(x)
+  y_filled <- fill_circular_series(y)
+
+  x_z <- zscore(x_filled)
+  y_z <- zscore(y_filled)
+
+  if (
+    all(is.na(x_z)) ||
+    all(is.na(y_z)) ||
+    !is.finite(lag)
+  ) {
+    return(NA_real_)
+  }
+
+  # Reconciled positions may produce fractional-week lags,
+  # so use the nearest whole week
+  lag_integer <- round(lag)
+
+  cor(
+    circ_shift(x_z, lag_integer),
+    y_z,
+    use = "complete.obs"
+  )
+}
+
+
+alignment_pair_table <- pairwise_lags_selected %>%
+  select(
+    species,
+    region1,
+    region2
+  ) %>%
+
+  left_join(
+    region_positions_selected %>%
+      rename(
+        region1 = region,
+        pos1 = position
+      ),
+    by = c("species", "region1")
+  ) %>%
+
+  left_join(
+    region_positions_selected %>%
+      rename(
+        region2 = region,
+        pos2 = position
+      ),
+    by = c("species", "region2")
+  ) %>%
+
+  mutate(
+    reconciled_lag = pos1 - pos2
+  )
+
+
+alignment_pair_table <- alignment_pair_table %>%
+  mutate(
+    cor_before = pmap_dbl(
+      list(species, region1, region2),
+      function(species_value, region1_value, region2_value) {
+
+        curve1 <- qpcr_weekly_selected %>%
+          filter(
+            .data$species == species_value,
+            as.character(.data$region) == region1_value
+          ) %>%
+          arrange(week) %>%
+          pull(value)
+
+        curve2 <- qpcr_weekly_selected %>%
+          filter(
+            .data$species == species_value,
+            as.character(.data$region) == region2_value
+          ) %>%
+          arrange(week) %>%
+          pull(value)
+
+        circular_cor_at_lag(
+          curve1,
+          curve2,
+          lag = 0
+        )
+      }
+    ),
+
+    cor_after = pmap_dbl(
+      list(
+        species,
+        region1,
+        region2,
+        reconciled_lag
+      ),
+      function(
+    species_value,
+    region1_value,
+    region2_value,
+    lag_value
+      ) {
+
+        curve1 <- qpcr_weekly_selected %>%
+          filter(
+            .data$species == species_value,
+            as.character(.data$region) == region1_value
+          ) %>%
+          arrange(week) %>%
+          pull(value)
+
+        curve2 <- qpcr_weekly_selected %>%
+          filter(
+            .data$species == species_value,
+            as.character(.data$region) == region2_value
+          ) %>%
+          arrange(week) %>%
+          pull(value)
+
+        circular_cor_at_lag(
+          curve1,
+          curve2,
+          lag = lag_value
+        )
+      }
+    )
+  )
+
+alignment_pair_table %>%
+  select(
+    species,
+    region1,
+    region2,
+    reconciled_lag,
+    cor_before,
+    cor_after
+  ) %>%
+  print(n = Inf)
+
+
+species_alignment_summary <- alignment_pair_table %>%
+  group_by(species) %>%
+  summarise(
+    n_pairs = sum(
+      is.finite(cor_before) &
+        is.finite(cor_after)
+    ),
+
+    mean_r_before = mean(
+      cor_before,
+      na.rm = TRUE
+    ),
+
+    mean_r_after = mean(
+      cor_after,
+      na.rm = TRUE
+    ),
+
+    change_in_r = mean_r_after - mean_r_before,
+
+    .groups = "drop"
+  ) %>%
+  mutate(
+    species_abbr = abbr_species(species)
+  ) %>%
+  select(
+    species,
+    species_abbr,
+    n_pairs,
+    mean_r_before,
+    mean_r_after,
+    change_in_r
+  )
+
+
+species_alignment_summary %>%
+  mutate(
+    across(
+      c(
+        mean_r_before,
+        mean_r_after,
+        change_in_r
+      ),
+      ~ round(.x, 3)
+    )
+  ) %>%
+  print(n = Inf)
