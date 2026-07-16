@@ -237,3 +237,460 @@ gom_points_sf <- st_as_sf(
 st_distance(gom_points_sf[1, ], gom_points_sf[2, ])
 
 # ggsave("code_2026/map/gom_p.png", p, width = 9, height = 9, dpi = 300)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sampling_locations <- dfRawClean %>%
+  filter(
+    !is.na(region),
+    !is.na(station),
+    !is.na(decimalLongitude),
+    !is.na(decimalLatitude)
+  ) %>%
+  distinct(
+    region,
+    station,
+    decimalLongitude,
+    decimalLatitude
+  ) %>%
+  arrange(region, station)
+
+sampling_locations
+
+sampling_locations_sf <- sampling_locations %>%
+  mutate(
+    region = factor(region, levels = names(region_colors))
+  ) %>%
+  st_as_sf(
+    coords = c("decimalLongitude", "decimalLatitude"),
+    crs = 4326,
+    remove = FALSE
+  )
+
+make_region_map <- function(
+    region_code,
+    sites_sf = sampling_locations_sf,
+    land_sf = land,
+    region_palette = region_colors,
+    padding_lon = 0.15,
+    padding_lat = 0.12
+) {
+
+  region_sites <- sites_sf %>%
+    filter(region == region_code)
+
+  if (nrow(region_sites) == 0) {
+    stop(paste("No sampling locations found for", region_code))
+  }
+
+  site_coordinates <- st_coordinates(region_sites)
+
+  x_range <- range(site_coordinates[, "X"], na.rm = TRUE)
+  y_range <- range(site_coordinates[, "Y"], na.rm = TRUE)
+
+  # Give maps a reasonable minimum width and height when sites
+  # are very close together.
+  # if (diff(x_range) < 0.05) {
+  #   x_range <- mean(x_range) + c(-0.025, 0.025)
+  # }
+  #
+  # if (diff(y_range) < 0.05) {
+  #   y_range <- mean(y_range) + c(-0.025, 0.025)
+  # }
+
+  x_limits <- x_range + c(-padding_lon, padding_lon)
+  y_limits <- y_range + c(-padding_lat, padding_lat)
+
+  ggplot() +
+    geom_sf(
+      data = land_sf,
+      fill = "grey90",
+      color = "grey50",
+      linewidth = 0.3
+    ) +
+    geom_sf(
+      data = region_sites,
+      aes(color = region),
+      size = 3.5
+    ) +
+    geom_text_repel(
+      data = region_sites,
+      aes(
+        x = decimalLongitude,
+        y = decimalLatitude,
+        label = station
+      ),
+      size = 3.2,
+      fontface = "bold",
+      min.segment.length = 0,
+      box.padding = 0.4,
+      point.padding = 0.3,
+      seed = 1
+    ) +
+    scale_color_manual(
+      values = region_palette,
+      limits = names(region_palette)
+    ) +
+    coord_sf(
+      xlim = x_limits,
+      ylim = y_limits,
+      expand = FALSE
+    ) +
+    labs(
+      title = region_code,
+      x = NULL,
+      y = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "none",
+      plot.title = element_text(
+        face = "bold",
+        hjust = 0.5
+      )
+    )
+}
+
+p_MAG <- make_region_map("MAG", padding_lon = 1.85, padding_lat = 1.82)
+p_MAG
+p_PEI <- make_region_map("PEI")
+p_HAL <- make_region_map("HAL")
+p_BOF <- make_region_map("BOF")
+p_GOM <- make_region_map("GOM")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+library(ggspatial)
+make_region_map <- function(
+    region_code,
+    sites_sf = sampling_locations_sf,
+    padding_lon = 0.05,
+    padding_lat = 0.04,
+    tile_zoom = 1,
+    merge_distance_m = 100
+) {
+
+  region_sites <- sites_sf %>%
+    filter(as.character(region) == region_code)
+
+  if (nrow(region_sites) == 0) {
+    stop(paste("No sampling locations found for", region_code))
+  }
+
+  # ------------------------------------------------------------
+  # Merge sampling locations within merge_distance_m
+  # ------------------------------------------------------------
+
+  region_sites_m <- region_sites %>%
+    st_transform(3347)
+
+  if (nrow(region_sites_m) > 1) {
+
+    distance_matrix <- st_distance(region_sites_m)
+
+    site_clusters <- hclust(
+      as.dist(distance_matrix),
+      method = "single"
+    )
+
+    region_sites_m$cluster_id <- cutree(
+      site_clusters,
+      h = merge_distance_m
+    )
+
+  } else {
+
+    region_sites_m$cluster_id <- 1L
+  }
+
+  region_sites_merged <- region_sites_m %>%
+    group_by(cluster_id) %>%
+    summarise(
+      region = first(region),
+      station = paste(
+        sort(unique(station)),
+        collapse = " / "
+      ),
+      n_locations = n(),
+      geometry = st_centroid(st_union(geometry)),
+      .groups = "drop"
+    ) %>%
+    st_transform(4326)
+
+  # ------------------------------------------------------------
+  # Calculate map limits and midpoint labels
+  # ------------------------------------------------------------
+
+  site_coordinates <- st_coordinates(region_sites_merged)
+
+  x_range <- range(site_coordinates[, "X"], na.rm = TRUE)
+  y_range <- range(site_coordinates[, "Y"], na.rm = TRUE)
+
+  x_limits <- x_range + c(-padding_lon, padding_lon)
+  y_limits <- y_range + c(-padding_lat, padding_lat)
+
+  x_mid <- mean(x_limits)
+  y_mid <- mean(y_limits)
+
+  # ------------------------------------------------------------
+  # Draw map
+  # ------------------------------------------------------------
+
+  ggplot() +
+
+    annotation_map_tile(
+      type = "cartolight",
+      zoomin = tile_zoom,
+      progress = "none"
+    ) +
+
+    geom_sf(
+      data = region_sites_merged,
+      shape = 21,
+      fill = "grey10",
+      color = "black",
+      stroke = 0.4,
+      size = 2.8
+    ) +
+
+    scale_x_continuous(
+      breaks = x_mid,
+      labels = function(x) {
+        paste0(
+          formatC(abs(x), format = "f", digits = 3),
+          "°W"
+        )
+      }
+    ) +
+
+    scale_y_continuous(
+      breaks = y_mid,
+      labels = function(y) {
+        paste0(
+          formatC(abs(y), format = "f", digits = 3),
+          "°N"
+        )
+      }
+    ) +
+
+    coord_sf(
+      xlim = x_limits,
+      ylim = y_limits,
+      expand = FALSE,
+      crs = st_crs(4326),
+      default_crs = st_crs(4326)
+    ) +
+
+    labs(
+      title = region_code,
+      x = NULL,
+      y = NULL,
+      caption = "© OpenStreetMap contributors"
+    ) +
+
+    theme_classic() +
+
+    theme(
+      legend.position = "none",
+
+      plot.title = element_text(
+        face = "bold",
+        hjust = 0.5,
+        size = 14
+      ),
+
+      plot.caption = element_text(
+        size = 6,
+        colour = "grey40"
+      ),
+
+      axis.text.x = element_text(
+        colour = "grey20",
+        size = 18,
+        margin = margin(t = 5)
+      ),
+
+      axis.text.y = element_text(
+        colour = "grey20",
+        size = 18,
+        angle = 90,
+        vjust = 0.5,
+        margin = margin(r = 5)
+      ),
+
+      axis.ticks = element_blank(),
+
+      panel.border = element_rect(
+        colour = "grey40",
+        fill = NA
+      )
+    )
+}
+
+p_MAG <- make_region_map("MAG", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_MAG
+p_PEI <- make_region_map("PEI", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_PEI
+p_HAL <- make_region_map("HAL", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_HAL
+p_BOF <- make_region_map("BOF", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_BOF
+p_GOM <- make_region_map("GOM", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_GOM
+
+
+
+# Create an output folder if it does not already exist
+dir.create(
+  "code_2026/map/regional_maps",
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+p_MAG <- make_region_map(
+  "MAG",
+  padding_lon = 0.035,
+  padding_lat = 0.02,
+  tile_zoom = 0
+)
+
+p_PEI <- make_region_map(
+  "PEI",
+  padding_lon = 0.035,
+  padding_lat = 0.02,
+  tile_zoom = 0
+)
+
+p_HAL <- make_region_map(
+  "HAL",
+  padding_lon = 0.035,
+  padding_lat = 0.02,
+  tile_zoom = 0
+)
+
+p_BOF <- make_region_map(
+  "BOF",
+  padding_lon = 0.035,
+  padding_lat = 0.02,
+  tile_zoom = 0
+)
+
+p_GOM <- make_region_map(
+  "GOM",
+  padding_lon = 0.035,
+  padding_lat = 0.02,
+  tile_zoom = 0
+)
+
+ggsave(
+  filename = "code_2026/map/regional_maps/MAG_map.png",
+  plot = p_MAG,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 400,
+  bg = "white"
+)
+
+ggsave(
+  filename = "code_2026/map/regional_maps/PEI_map.png",
+  plot = p_PEI,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 400,
+  bg = "white"
+)
+
+ggsave(
+  filename = "code_2026/map/regional_maps/HAL_map.png",
+  plot = p_HAL,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 400,
+  bg = "white"
+)
+
+ggsave(
+  filename = "code_2026/map/regional_maps/BOF_map.png",
+  plot = p_BOF,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 400,
+  bg = "white"
+)
+
+ggsave(
+  filename = "code_2026/map/regional_maps/GOM_map.png",
+  plot = p_GOM,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 400,
+  bg = "white"
+)

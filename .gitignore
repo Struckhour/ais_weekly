@@ -5,3 +5,6 @@
 .Rhistory
 .RData
 .Ruserdata
+
+#mapping files
+rosm.cache/
