@@ -4,6 +4,8 @@ library(stringr)
 library(mgcv)
 library(ggplot2)
 
+source('./AIS_eDNA_data_prep.R')
+
 # --------------------------
 # 1. Prep plate abundance weekly
 # --------------------------
@@ -136,7 +138,13 @@ fit_gam_models <- function(sp) {
       is.finite(meanTemp),
       is.finite(meanSal)
     ) %>%
-    mutate(region = factor(region, levels = c("MAG","PEI","HAL","BOF","GOM")))
+    mutate(
+      region = factor(
+        region,
+        levels = c("MAG", "PEI", "HAL", "BOF", "GOM")
+      )
+    ) %>%
+    droplevels()
 
   if (nrow(df_sp) < 30) return(NULL)
 
@@ -303,7 +311,7 @@ write_xlsx(
 
 season_smooth_df <- purrr::imap_dfr(gam_fits, function(x, sp) {
 
-  fit <- x$temp_sal
+  fit <- x$region_temp_sal
   dat <- x$data
 
   pred_grid <- tidyr::expand_grid(
@@ -381,7 +389,7 @@ ggsave("manuscript_figures/figure_8.png", p_season_smooths, width = 8, height = 
 
 temp_effect_df <- purrr::imap_dfr(gam_fits, function(x, sp) {
 
-  fit <- x$temp_sal
+  fit <- x$region_temp_sal
   dat <- x$data
 
   temp_seq <- seq(
@@ -445,3 +453,195 @@ p_temp <- ggplot(
 
 p_temp
 ggsave("manuscript_figures/figure_9.png", p_temp, width = 8, height = 6, dpi = 300)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#NEW CODE TRYING TO ADD RESIDUALS. NOT SURE IF THIS IS WHAT IS BEING ASKED FOR?
+############################
+# TEMPERATURE EFFECT CURVES
+############################
+temp_effect_df <- purrr::imap_dfr(gam_fits, function(x, sp) {
+
+  fit <- x$region_temp_sal
+  dat <- x$data
+
+  temp_seq <- seq(
+    min(dat$meanTemp, na.rm = TRUE),
+    max(dat$meanTemp, na.rm = TRUE),
+    length.out = 200
+  )
+
+  # Region levels that were actually present in this fitted model
+  fitted_region_levels <- levels(model.frame(fit)$region)
+
+  # Choose the first region actually used by this species' model
+  reference_region <- fitted_region_levels[1]
+
+  pred_grid <- tibble::tibble(
+    meanTemp = temp_seq,
+    meanSal = mean(dat$meanSal, na.rm = TRUE),
+    week_of_year = 26,
+    region = factor(
+      reference_region,
+      levels = fitted_region_levels
+    )
+  )
+
+  pred <- predict(
+    fit,
+    newdata = pred_grid,
+    se.fit = TRUE,
+    type = "terms"
+  )
+
+  temp_term <- pred$fit[, "s(meanTemp)"]
+  temp_se <- pred$se.fit[, "s(meanTemp)"]
+
+  pred_grid %>%
+    dplyr::mutate(
+      species = sp,
+      fit = as.numeric(temp_term),
+      lower = fit - 1.96 * as.numeric(temp_se),
+      upper = fit + 1.96 * as.numeric(temp_se)
+    )
+})
+
+############################
+# TEMPERATURE PARTIAL RESIDUALS
+############################
+
+temp_partial_residuals <- purrr::imap_dfr(gam_fits, function(x, sp) {
+
+  fit <- x$region_temp_sal
+  dat <- x$data
+
+  # Contribution of each model term for every observed data point
+  term_predictions <- predict(
+    fit,
+    newdata = dat,
+    type = "terms"
+  )
+
+  # Temperature partial residual:
+  # fitted temperature effect + model residual
+  dat %>%
+    dplyr::mutate(
+      species = sp,
+      temp_effect = term_predictions[, "s(meanTemp)"],
+      model_residual = residuals(fit, type = "response"),
+      temp_partial_residual = temp_effect + model_residual
+    )
+})
+
+
+species_order <- c(
+  "Membranipora membranacea",
+  "Botrylloides violaceus",
+  "Didemnum vexillum",
+  "Ciona intestinalis",
+  "Carcinus maenas"
+)
+
+temp_effect_df <- temp_effect_df %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  )
+
+temp_partial_residuals <- temp_partial_residuals %>%
+  dplyr::mutate(
+    species = factor(species, levels = species_order)
+  )
+
+
+p_temp <- ggplot() +
+
+  # Partial residuals from the observed data
+  geom_point(
+    data = temp_partial_residuals,
+    aes(
+      x = meanTemp,
+      y = temp_partial_residual
+    ),
+    size = 1.2,
+    alpha = 0.35
+  ) +
+
+  # 95% confidence interval
+  geom_ribbon(
+    data = temp_effect_df,
+    aes(
+      x = meanTemp,
+      ymin = lower,
+      ymax = upper
+    ),
+    alpha = 0.2
+  ) +
+
+  # Estimated temperature effect
+  geom_line(
+    data = temp_effect_df,
+    aes(
+      x = meanTemp,
+      y = fit
+    ),
+    linewidth = 1
+  ) +
+
+  facet_wrap(
+    ~ species,
+    scales = "free_y"
+  ) +
+
+  labs(
+    x = "Temperature (°C)",
+    y = "Partial effect on qPCR concentration"
+  ) +
+
+  theme_classic() +
+
+  theme(
+    strip.text = element_text(face = "italic")
+  )
+
+p_temp
+
+ggsave(
+  "manuscript_figures/figure_9.png",
+  p_temp,
+  width = 8,
+  height = 6,
+  dpi = 300
+)
