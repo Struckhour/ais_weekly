@@ -387,13 +387,16 @@ make_region_map <- function(
     )
 }
 
-p_MAG <- make_region_map("MAG", padding_lon = 1.85, padding_lat = 1.82)
+p_MAG <- make_region_map("MAG", padding_lon = .001, padding_lat = .0001)
 p_MAG
-p_PEI <- make_region_map("PEI")
-p_HAL <- make_region_map("HAL")
-p_BOF <- make_region_map("BOF")
-p_GOM <- make_region_map("GOM")
-
+p_PEI <- make_region_map("PEI", padding_lon = .001, padding_lat = .0001)
+p_PEI
+p_HAL <- make_region_map("HAL", padding_lon = .001, padding_lat = .0001)
+p_HAL
+p_BOF <- make_region_map("BOF", padding_lon = .001, padding_lat = .0001)
+p_BOF
+p_GOM <- make_region_map("GOM", padding_lon = .01, padding_lat = .01)
+p_GOM
 
 
 
@@ -590,13 +593,150 @@ make_region_map <- function(
     )
 }
 
-p_MAG <- make_region_map("MAG", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+
+library(ggspatial)
+
+make_region_map <- function(
+    region_code,
+    sites_sf = sampling_locations_sf,
+    padding_lon = 0.05,
+    padding_lat = 0.04,
+    tile_zoom = 1
+) {
+
+  # ------------------------------------------------------------
+  # Select every sampling location in the requested region
+  # ------------------------------------------------------------
+
+  region_sites <- sites_sf %>%
+    filter(as.character(region) == region_code) %>%
+    st_transform(4326)
+
+  if (nrow(region_sites) == 0) {
+    stop(paste("No sampling locations found for", region_code))
+  }
+
+  # ------------------------------------------------------------
+  # Calculate map limits from all sampling locations
+  # ------------------------------------------------------------
+
+  site_coordinates <- st_coordinates(region_sites)
+
+  x_range <- range(site_coordinates[, "X"], na.rm = TRUE)
+  y_range <- range(site_coordinates[, "Y"], na.rm = TRUE)
+
+  x_limits <- x_range + c(-padding_lon, padding_lon)
+  y_limits <- y_range + c(-padding_lat, padding_lat)
+
+  x_mid <- mean(x_limits)
+  y_mid <- mean(y_limits)
+
+  # ------------------------------------------------------------
+  # Draw map
+  # ------------------------------------------------------------
+
+  ggplot() +
+
+    annotation_map_tile(
+      type = "cartolight",
+      zoomin = tile_zoom,
+      progress = "none"
+    ) +
+
+    geom_sf(
+      data = region_sites,
+      shape = 21,
+      fill = "grey10",
+      color = "black",
+      stroke = 0.4,
+      size = 2.8
+    ) +
+
+    scale_x_continuous(
+      breaks = x_mid,
+      labels = function(x) {
+        paste0(
+          formatC(abs(x), format = "f", digits = 3),
+          "°W"
+        )
+      }
+    ) +
+
+    scale_y_continuous(
+      breaks = y_mid,
+      labels = function(y) {
+        paste0(
+          formatC(abs(y), format = "f", digits = 3),
+          "°N"
+        )
+      }
+    ) +
+
+    coord_sf(
+      xlim = x_limits,
+      ylim = y_limits,
+      expand = FALSE,
+      crs = st_crs(4326),
+      default_crs = st_crs(4326)
+    ) +
+
+    labs(
+      title = region_code,
+      x = NULL,
+      y = NULL,
+      caption = "© OpenStreetMap contributors"
+    ) +
+
+    theme_classic() +
+
+    theme(
+      legend.position = "none",
+
+      plot.title = element_text(
+        face = "bold",
+        hjust = 0.5,
+        size = 14
+      ),
+
+      plot.caption = element_text(
+        size = 6,
+        colour = "grey40"
+      ),
+
+      axis.text.x = element_text(
+        colour = "grey20",
+        size = 18,
+        margin = margin(t = 5)
+      ),
+
+      axis.text.y = element_text(
+        colour = "grey20",
+        size = 18,
+        angle = 90,
+        vjust = 0.5,
+        margin = margin(r = 5)
+      ),
+
+      axis.ticks = element_blank(),
+
+      panel.border = element_rect(
+        colour = "grey40",
+        fill = NA
+      )
+    )
+}
+
+sampling_locations_sf <- sampling_locations_sf %>%
+  slice(-c(9, 11))
+
+
+p_MAG <- make_region_map("MAG", padding_lon = .005, padding_lat = .003, tile_zoom = 0)
 p_MAG
-p_PEI <- make_region_map("PEI", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_PEI <- make_region_map("PEI", padding_lon = .003, padding_lat = .002, tile_zoom = 0)
 p_PEI
-p_HAL <- make_region_map("HAL", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_HAL <- make_region_map("HAL", padding_lon = .003, padding_lat = .002, tile_zoom = 0)
 p_HAL
-p_BOF <- make_region_map("BOF", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
+p_BOF <- make_region_map("BOF", padding_lon = .003, padding_lat = .002, tile_zoom = 0)
 p_BOF
 p_GOM <- make_region_map("GOM", padding_lon = .035, padding_lat = .02, tile_zoom = 0)
 p_GOM
@@ -646,7 +786,7 @@ p_GOM <- make_region_map(
 )
 
 ggsave(
-  filename = "code_2026/map/regional_maps/MAG_map.png",
+  filename = "code_2026/map/regional_maps/MAG_map_zoomed.png",
   plot = p_MAG,
   width = 8,
   height = 5,
@@ -656,7 +796,7 @@ ggsave(
 )
 
 ggsave(
-  filename = "code_2026/map/regional_maps/PEI_map.png",
+  filename = "code_2026/map/regional_maps/PEI_map_zoomed.png",
   plot = p_PEI,
   width = 8,
   height = 5,
@@ -666,7 +806,7 @@ ggsave(
 )
 
 ggsave(
-  filename = "code_2026/map/regional_maps/HAL_map.png",
+  filename = "code_2026/map/regional_maps/HAL_map_zoomed.png",
   plot = p_HAL,
   width = 8,
   height = 5,
@@ -676,7 +816,7 @@ ggsave(
 )
 
 ggsave(
-  filename = "code_2026/map/regional_maps/BOF_map.png",
+  filename = "code_2026/map/regional_maps/BOF_map_zoomed.png",
   plot = p_BOF,
   width = 8,
   height = 5,
