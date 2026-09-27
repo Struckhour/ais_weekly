@@ -391,7 +391,7 @@ df_plot <- dfMonths %>%
     species = factor(species, levels = species_order)
   )
 # Plot
-ggplot(df_plot, aes(x = month_plot_label, y = value, color = metric)) +
+p <- ggplot(df_plot, aes(x = month_plot_label, y = value, color = metric)) +
 
   geom_line(
     data = df_plot %>% filter(metric != "Normalized Positive log concentration"),
@@ -447,3 +447,4 @@ ggplot(df_plot, aes(x = month_plot_label, y = value, color = metric)) +
     legend.position = "top",
     axis.text.x = element_text(angle = 0, vjust = 0.5)
   )
+ggsave("manuscript_figures/figure_A1.png", p, width = 11, height = 6, dpi = 300)
